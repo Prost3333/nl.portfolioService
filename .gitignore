@@ -1,0 +1,49 @@
+﻿# Сборка
+**/build/
+**/target/
+**/out/
+**/bin/
+*.jar
+*.war
+*.class
+
+# Gradle
+**/.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+**/.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# Логи
+*.log
+**/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Секреты — НИКОГДА не коммитить!
+.env
+*.env
+!.env.example
+**/application-local.yml
+**/application-secret.yml
+
+# Docker volumes
+**/postgres-data/
+**/mysql-data/
+**/redis-data/
+
+# Прочее
+*.tmp
+*.bak
+HELP.md

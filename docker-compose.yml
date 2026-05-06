@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  postgres-auth:
+    image: postgres:15
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+
+  postgres-finance:
+    image: postgres:15
+    container_name: postgres-finance
+    environment:
+      POSTGRES_DB: ${FINANCE_DB_NAME:-finance_db}
+      POSTGRES_USER: ${FINANCE_DB_USER:-finance}
+      POSTGRES_PASSWORD: ${FINANCE_DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - finance_data:/var/lib/postgresql/data
+
+  postgres-report:
+    image: postgres:15
+    container_name: postgres-report
+    environment:
+      POSTGRES_DB: ${REPORT_DB_NAME:-report_db}
+      POSTGRES_USER: ${REPORT_DB_USER:-report}
+      POSTGRES_PASSWORD: ${REPORT_DB_PASSWORD}
+    ports:
+      - "5435:5432"
+    volumes:
+      - report_data:/var/lib/postgresql/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+volumes:
+  auth_data:
+  finance_data:
+  report_data:
+
