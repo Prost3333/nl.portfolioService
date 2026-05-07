@@ -18,7 +18,7 @@ public class AuthService {
     @Transactional
     public void register(String email, String password){
         if (userRepository.existsByEmail(email)){
-            throw new IllegalStateException("Email already exist");
+            throw new IllegalStateException("Email already exists");
         }
         User user=User.builder()
                 .email(email)
