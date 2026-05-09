@@ -47,3 +47,9 @@ desktop.ini
 *.tmp
 *.bak
 HELP.md
+# Архивы
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z

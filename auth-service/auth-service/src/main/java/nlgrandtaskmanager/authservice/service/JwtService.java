@@ -39,7 +39,7 @@ public class JwtService {
     public UUID parseUserId(String token){
         return UUID.fromString(
                 Jwts.parserBuilder()
-                        .setSigningKey(secret.getBytes())
+                        .setSigningKey(signingKey)
                         .build()
                         .parseClaimsJws(token)
                         .getBody()
