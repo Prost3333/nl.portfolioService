@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -37,12 +38,12 @@ class AuthServiceTest {
         String email = "test@example.com";
         when(userRepository.existsByEmail(email)).thenReturn(true);
 
-        IllegalStateException ex = assertThrows(
-            IllegalStateException.class,
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
             () -> authService.register(email, "password123")
         );
 
-        assertEquals("Email already exists", ex.getMessage());
+        assertEquals("Email already exists", ex.getReason());
 
         verify(userRepository, never()).save(any());
     }
@@ -72,11 +73,11 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        IllegalStateException ex = assertThrows(
-                IllegalStateException.class,
+        ResponseStatusException ex = assertThrows(
+                ResponseStatusException.class,
                 () -> authService.login(email, password)
         );
-        assertEquals("Invalid credentials", ex.getMessage());
+        assertEquals("Invalid credentials", ex.getReason());
         verify(jwtService, never()).generateToken(any());
     }
 
@@ -93,11 +94,11 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(password,user.getPasswordHash())).thenReturn(false);
-        IllegalStateException ex=assertThrows(
-                IllegalStateException.class,
+        ResponseStatusException ex=assertThrows(
+                ResponseStatusException.class,
                 ()-> authService.login(email,password));
 
-        assertEquals("Invalid credentials",ex.getMessage());
+        assertEquals("Invalid credentials",ex.getReason());
         verify(jwtService,never()).generateToken(any());
 
     }

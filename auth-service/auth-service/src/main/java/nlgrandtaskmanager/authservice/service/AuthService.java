@@ -4,8 +4,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.authservice.model.User;
 import nlgrandtaskmanager.authservice.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
@@ -18,7 +20,7 @@ public class AuthService {
     @Transactional
     public void register(String email, String password){
         if (userRepository.existsByEmail(email)){
-            throw new IllegalStateException("Email already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,"Email already exists");
         }
         User user=User.builder()
                 .email(email)
@@ -29,10 +31,10 @@ public class AuthService {
     }
     public String login(String email, String password){
         User user= userRepository.findByEmail(email)
-                .orElseThrow(()->new IllegalStateException("Invalid credentials"));
+                .orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials"));
 
         if (!passwordEncoder.matches(password, user.getPasswordHash())){
-            throw new IllegalStateException("Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials");
         }
         return jwtService.generateToken(user.getId());
     }
