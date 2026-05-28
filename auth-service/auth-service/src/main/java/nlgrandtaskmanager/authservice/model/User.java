@@ -21,6 +21,6 @@ public class User {
     @Column(nullable = false)
     private  String passwordHash;
     @Column(nullable = false)
-    private Instant createAt;
+    private Instant createdAt;
 
 }

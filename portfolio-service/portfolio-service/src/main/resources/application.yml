@@ -1,0 +1,25 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: portfolio-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5436/portfolio_db}
+    username: ${DB_USERNAME:portfolio}
+    password: ${DB_PASSWORD:portfolio}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:3600000}

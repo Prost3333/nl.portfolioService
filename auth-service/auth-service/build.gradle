@@ -41,6 +41,8 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    implementation 'org.liquibase:liquibase-core'
+
     testRuntimeOnly 'com.h2database:h2'
 }
 

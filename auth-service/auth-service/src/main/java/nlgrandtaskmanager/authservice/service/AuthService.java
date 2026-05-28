@@ -25,7 +25,7 @@ public class AuthService {
         User user=User.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(password))
-                .createAt(Instant.now())
+                .createdAt(Instant.now())
                 .build();
         userRepository.save(user);
     }

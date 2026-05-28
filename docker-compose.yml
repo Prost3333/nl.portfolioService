@@ -37,6 +37,18 @@ services:
     volumes:
       - report_data:/var/lib/postgresql/data
 
+  postgres-portfolio:
+    image: postgres:15
+    container_name: postgres-portfolio
+    environment:
+      POSTGRES_DB: ${PORTFOLIO_DB_NAME:-portfolio_db}
+      POSTGRES_USER: ${PORTFOLIO_DB_USER:-portfolio}
+      POSTGRES_PASSWORD: ${PORTFOLIO_DB_PASSWORD}
+    ports:
+      - "5436:5432"
+    volumes:
+      - portfolio_data:/var/lib/postgresql/data
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
     container_name: zookeeper
@@ -65,4 +77,5 @@ volumes:
   auth_data:
   finance_data:
   report_data:
+  portfolio_data:
 

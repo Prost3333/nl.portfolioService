@@ -62,7 +62,7 @@ class AuthServiceTest {
         verify(userRepository).save(argThat(user ->
             user.getEmail().equals(email) &&
             user.getPasswordHash().equals(hashedPassword) &&
-            user.getCreateAt() != null
+            user.getCreatedAt() != null
         ));
     }
 
@@ -89,7 +89,7 @@ class AuthServiceTest {
                 .id(UUID.randomUUID())
                 .email(email)
                 .passwordHash("password")
-                .createAt(Instant.now())
+                .createdAt(Instant.now())
                 .build();
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
@@ -110,7 +110,7 @@ class AuthServiceTest {
                 .id(UUID.randomUUID())
                 .email(email)
                 .passwordHash("password123")
-                .createAt(Instant.now())
+                .createdAt(Instant.now())
                 .build();
 
 
