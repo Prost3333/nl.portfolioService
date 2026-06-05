@@ -1,6 +1,7 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 import nlgrandtaskmanager.portfolio_service.client.YahooResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.client.RestClient;
 
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,7 @@ import java.math.BigDecimal;
 public class PriceService {
 
     private final RestClient yahooRestClient;
-
+    @Cacheable("prices")
     public BigDecimal getPrice(String ticker) {
         YahooResponse.YahooChartResponse response = yahooRestClient.get()
                 .uri("/v8/finance/chart/{ticker}", ticker)
