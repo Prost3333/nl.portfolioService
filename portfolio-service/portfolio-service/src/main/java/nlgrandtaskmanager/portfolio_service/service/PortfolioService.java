@@ -22,45 +22,57 @@ public class PortfolioService {
     private final PriceService priceService;
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
-
         List<Position> positions = positionRepository.findByUserId(userId);
 
         List<PositionValue> rawValues = new ArrayList<>();
         BigDecimal total = BigDecimal.ZERO;
 
-        for (Position position:positions) {
+        for (Position position : positions) {
             BigDecimal price = priceService.getPrice(position.getTicker());
-            BigDecimal value = position.getQuantity().multiply(price);
 
+            if (price == null) {
+                rawValues.add(new PositionValue(
+                        position.getTicker(),
+                        position.getName(),
+                        position.getQuantity(),
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        false
+                ));
+                continue;
+            }
+
+            BigDecimal value = position.getQuantity().multiply(price);
             rawValues.add(new PositionValue(
                     position.getTicker(),
                     position.getName(),
                     position.getQuantity(),
                     price,
                     value,
-                    BigDecimal.ZERO
-
+                    BigDecimal.ZERO,
+                    true
             ));
-
-            total=total.add(value);
+            total = total.add(value);
         }
+
         if (total.compareTo(BigDecimal.ZERO) == 0) {
             return new PortfolioSummaryResponse(BigDecimal.ZERO, rawValues);
         }
-        List<PositionValue> result = new ArrayList<>();
 
-        for (PositionValue positionValue : rawValues) {
-            BigDecimal percent = positionValue.value()
+
+        List<PositionValue> result = new ArrayList<>();
+        for (PositionValue pv : rawValues) {
+            if (!pv.priceAvailable()) {
+                result.add(pv);
+                continue;
+            }
+            BigDecimal percent = pv.value()
                     .divide(total, 4, RoundingMode.HALF_UP)
                     .multiply(BigDecimal.valueOf(100));
-
             result.add(new PositionValue(
-                    positionValue.ticker(),
-                    positionValue.name(),
-                    positionValue.quantity(),
-                    positionValue.price(),
-                    positionValue.value(),
-                    percent
+                    pv.ticker(), pv.name(), pv.quantity(),
+                    pv.price(), pv.value(), percent, true
             ));
         }
 

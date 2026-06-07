@@ -175,6 +175,16 @@
         }
 
         .loading { text-align: center; color: var(--text-dim); padding: 40px; }
+
+        tr.unavailable td { opacity: 0.5; }
+        .badge-na {
+            display: inline-block;
+            font-size: 11px;
+            color: var(--red);
+            border: 1px solid var(--red);
+            border-radius: 4px;
+            padding: 1px 6px;
+        }
     </style>
 </head>
 <body>
@@ -323,8 +333,12 @@
         document.getElementById("total-value").textContent =
             "€ " + formatMoney(data.totalValue);
 
-        // Сортируем по стоимости (убывание) для красоты
-        const positions = [...data.positions].sort((a, b) => b.value - a.value);
+        // Сортируем по стоимости (убывание); битые (value null) — в конец
+        const positions = [...data.positions].sort((a, b) => {
+            const va = a.priceAvailable ? Number(a.value) : -1;
+            const vb = b.priceAvailable ? Number(b.value) : -1;
+            return vb - va;
+        });
 
         renderChart(positions);
         renderTable(positions);
@@ -334,12 +348,15 @@
         const ctx = document.getElementById("pie-chart");
         if (chart) chart.destroy();
 
+        // В диаграмму — только бумаги с доступной ценой
+        const valid = positions.filter(p => p.priceAvailable);
+
         chart = new Chart(ctx, {
             type: "doughnut",
             data: {
-                labels: positions.map(p => p.ticker),
+                labels: valid.map(p => p.ticker),
                 datasets: [{
-                    data: positions.map(p => Number(p.value)),
+                    data: valid.map(p => Number(p.value)),
                     backgroundColor: COLORS,
                     borderColor: "#0d1117",
                     borderWidth: 2
@@ -373,6 +390,16 @@
             '</tr></thead><tbody>';
 
         for (const p of positions) {
+            if (!p.priceAvailable) {
+                // битая бумага — серым, с пометкой вместо цифр
+                html += '<tr class="unavailable">' +
+                    '<td><div class="ticker">' + p.ticker + '</div>' +
+                    '<div class="name-dim">' + escapeHtml(p.name.trim()) + '</div></td>' +
+                    '<td class="num">' + formatNum(p.quantity) + '</td>' +
+                    '<td class="num" colspan="3"><span class="badge-na">цена недоступна</span></td>' +
+                    '</tr>';
+                continue;
+            }
             const alloc = Number(p.allocation);
             html += '<tr>' +
                 '<td><div class="ticker">' + p.ticker + '</div>' +

@@ -7,6 +7,7 @@ public record PositionValue(String ticker,
                             BigDecimal quantity,
                             BigDecimal price,
                             BigDecimal value,
-                            BigDecimal allocation
+                            BigDecimal allocation,
+                            boolean priceAvailable
 ) {
 }
