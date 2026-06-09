@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
 import nlgrandtaskmanager.portfolio_service.dto.PositionValue;
+import nlgrandtaskmanager.portfolio_service.model.PortfolioSnapshot;
 import nlgrandtaskmanager.portfolio_service.model.Position;
+import nlgrandtaskmanager.portfolio_service.repository.PortfolioSnapshotRepository;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +23,7 @@ public class PortfolioService {
 
     private final PositionRepository positionRepository;
     private final PriceService priceService;
+    private final PortfolioSnapshotRepository snapshotRepository;
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
         List<Position> positions = positionRepository.findByUserId(userId);
@@ -78,4 +82,22 @@ public class PortfolioService {
 
         return new PortfolioSummaryResponse(total, result);
     }
+
+    public void saveSnapshot(UUID userId) {
+        LocalDate today = LocalDate.now();
+
+        if (snapshotRepository.existsByUserIdAndSnapshotDate(userId, today)) {
+            return;
+        }
+        BigDecimal totalValue = getSummary(userId).totalValue();
+
+        PortfolioSnapshot snapshot = PortfolioSnapshot.builder()
+                .userId(userId)
+                .totalValue(totalValue)
+                .snapshotDate(today)
+                .build();
+
+        snapshotRepository.save(snapshot);
+    }
+
 }
