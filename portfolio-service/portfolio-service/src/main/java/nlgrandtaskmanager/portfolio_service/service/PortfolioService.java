@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
 import nlgrandtaskmanager.portfolio_service.dto.PositionValue;
+import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
 import nlgrandtaskmanager.portfolio_service.model.PortfolioSnapshot;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.repository.PortfolioSnapshotRepository;
@@ -98,6 +99,13 @@ public class PortfolioService {
                 .build();
 
         snapshotRepository.save(snapshot);
+    }
+
+    public List<SnapshotResponse> getHistory(UUID userId){
+        return snapshotRepository.findByUserIdOrderBySnapshotDateAsc(userId)
+                .stream()
+                .map(s->new SnapshotResponse(s.getSnapshotDate(),s.getTotalValue()))
+                .toList();
     }
 
 }
