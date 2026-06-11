@@ -14,8 +14,8 @@ public class SnapshotScheduler {
     private final PositionRepository positionRepository;
     private final PortfolioService portfolioService;
 
-//        @Scheduled(cron = "0 0 18 * * *")
-    @Scheduled(fixedRate = 60000)
+        @Scheduled(cron = "0 0 18 * * *")
+//    @Scheduled(fixedRate = 60000)
     public void takeDailySnapshots() {
         System.out.println(">>> Scheduler make snapshot portfolio");
         for (UUID userId : positionRepository.findDistinctUserIds()) {

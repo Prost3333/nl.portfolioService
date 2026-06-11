@@ -99,6 +99,15 @@
             min-height: 18px;
         }
 
+        .register-link {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .register-link a { color: var(--accent); text-decoration: none; }
+        .register-link a:hover { text-decoration: underline; }
+
         /* Dashboard */
         #dashboard-view { display: none; }
 
@@ -185,6 +194,35 @@
             border-radius: 4px;
             padding: 1px 6px;
         }
+
+        /* Управление позициями */
+        .add-form {
+            display: grid;
+            grid-template-columns: 130px 1fr 130px auto;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 768px) { .add-form { grid-template-columns: 1fr; } }
+        .add-form .field { margin-bottom: 0; }
+        .add-btn {
+            width: auto;
+            padding: 10px 20px;
+            white-space: nowrap;
+        }
+        .delete-btn {
+            width: auto;
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .delete-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
+        .form-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
+        .form-msg.ok { color: var(--green); }
+        .form-msg.err { color: var(--red); }
     </style>
 </head>
 <body>
@@ -203,6 +241,9 @@
         </div>
         <button id="login-btn" onclick="login()">Войти</button>
         <div class="error" id="login-error"></div>
+        <div class="register-link">
+            Нет аккаунта? <a href="http://localhost:8081/">Зарегистрироваться</a>
+        </div>
     </div>
 
     <!-- DASHBOARD -->
@@ -231,6 +272,27 @@
                 <h2>Позиции</h2>
                 <div id="positions-table"></div>
             </div>
+        </div>
+
+        <div class="card" style="margin-top: 24px;">
+            <h2>Управление позициями</h2>
+            <div class="add-form">
+                <div class="field">
+                    <label for="new-ticker">Тикер</label>
+                    <input type="text" id="new-ticker" placeholder="AAPL">
+                </div>
+                <div class="field">
+                    <label for="new-name">Название</label>
+                    <input type="text" id="new-name" placeholder="Apple Inc.">
+                </div>
+                <div class="field">
+                    <label for="new-quantity">Количество</label>
+                    <input type="number" id="new-quantity" placeholder="10" min="0" step="any">
+                </div>
+                <button class="add-btn" id="add-btn" onclick="addPosition()">Добавить</button>
+            </div>
+            <div class="form-msg" id="manage-msg"></div>
+            <div id="manage-table"></div>
         </div>
 
         <div class="card" style="margin-top: 24px;">
@@ -332,8 +394,122 @@
             const data = await resp.json();
             render(data);
             loadHistory();   // подгружаем историю для графика во времени
+            loadPositions(); // список позиций для управления
         } catch (e) {
             tableEl.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
+        }
+    }
+
+    // ===== Управление позициями (добавление / удаление) =====
+    async function loadPositions() {
+        const el = document.getElementById("manage-table");
+        try {
+            const resp = await fetch(PORTFOLIO_URL + "/positions", {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!resp.ok) {
+                el.innerHTML = '<div class="loading">Ошибка загрузки позиций (' + resp.status + ')</div>';
+                return;
+            }
+            renderManageTable(await resp.json());
+        } catch (e) {
+            el.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
+        }
+    }
+
+    function renderManageTable(positions) {
+        const el = document.getElementById("manage-table");
+        if (positions.length === 0) {
+            el.innerHTML = '<div class="loading">Позиций пока нет — добавьте первую</div>';
+            return;
+        }
+
+        let html = '<table><thead><tr>' +
+            '<th>Тикер</th>' +
+            '<th>Название</th>' +
+            '<th class="num">Кол-во</th>' +
+            '<th class="num"></th>' +
+            '</tr></thead><tbody>';
+
+        for (const p of positions) {
+            html += '<tr>' +
+                '<td class="ticker">' + escapeHtml(p.ticker) + '</td>' +
+                '<td class="name-dim">' + escapeHtml(p.name) + '</td>' +
+                '<td class="num">' + formatNum(p.quantity) + '</td>' +
+                '<td class="num"><button class="delete-btn" onclick="deletePosition(\'' + p.id + '\', \'' +
+                    escapeHtml(p.ticker).replace(/'/g, "\\'") + '\')">Удалить</button></td>' +
+                '</tr>';
+        }
+
+        html += '</tbody></table>';
+        el.innerHTML = html;
+    }
+
+    function showManageMsg(text, isError) {
+        const el = document.getElementById("manage-msg");
+        el.textContent = text;
+        el.className = "form-msg " + (isError ? "err" : "ok");
+    }
+
+    async function addPosition() {
+        const ticker = document.getElementById("new-ticker").value.trim().toUpperCase();
+        const name = document.getElementById("new-name").value.trim();
+        const quantity = document.getElementById("new-quantity").value;
+        const btn = document.getElementById("add-btn");
+
+        if (!ticker || !name || !quantity || Number(quantity) <= 0) {
+            showManageMsg("Заполните тикер, название и количество (больше нуля)", true);
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Добавление...";
+        try {
+            const resp = await fetch(PORTFOLIO_URL + "/positions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({ ticker, name, quantity })
+            });
+
+            if (!resp.ok) {
+                showManageMsg("Не удалось добавить (" + resp.status + ")", true);
+                return;
+            }
+
+            showManageMsg(ticker + " добавлена", false);
+            document.getElementById("new-ticker").value = "";
+            document.getElementById("new-name").value = "";
+            document.getElementById("new-quantity").value = "";
+            await loadPortfolio(); // перезагружает summary, историю и список позиций
+        } catch (e) {
+            showManageMsg("portfolio-service недоступен", true);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Добавить";
+        }
+    }
+
+    async function deletePosition(id, ticker) {
+        if (!confirm("Удалить позицию " + ticker + "?")) return;
+
+        try {
+            const resp = await fetch(PORTFOLIO_URL + "/positions/" + id, {
+                method: "DELETE",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (!resp.ok && resp.status !== 204) {
+                showManageMsg("Не удалось удалить (" + resp.status + ")", true);
+                return;
+            }
+
+            showManageMsg(ticker + " удалена", false);
+            await loadPortfolio();
+        } catch (e) {
+            showManageMsg("portfolio-service недоступен", true);
         }
     }
 
@@ -511,6 +687,13 @@
     document.getElementById("password").addEventListener("keydown", (e) => {
         if (e.key === "Enter") login();
     });
+
+    // Enter в полях формы добавления = добавить позицию
+    for (const id of ["new-ticker", "new-name", "new-quantity"]) {
+        document.getElementById(id).addEventListener("keydown", (e) => {
+            if (e.key === "Enter") addPosition();
+        });
+    }
 </script>
 </body>
 </html>
