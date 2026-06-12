@@ -6,6 +6,7 @@ import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
 import nlgrandtaskmanager.portfolio_service.service.PortfolioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,5 +38,11 @@ public class PortfolioController {
         UUID userId = (UUID) authentication.getPrincipal();
         portfolioService.saveSnapshot(userId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/admin/snapshots/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<SnapshotResponse> getAnySnapshots(@PathVariable UUID userId) {
+        return portfolioService.getHistory(userId, "all");
     }
 }

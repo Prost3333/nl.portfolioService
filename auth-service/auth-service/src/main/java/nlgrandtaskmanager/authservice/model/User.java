@@ -22,5 +22,8 @@ public class User {
     private  String passwordHash;
     @Column(nullable = false)
     private Instant createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role",nullable = false)
+    private Role role;
 
 }

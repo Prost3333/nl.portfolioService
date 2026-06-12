@@ -23,8 +23,9 @@ public class JwtServiceTest {
     @Test
     void generateToken_thenParseUserId_returnsSameUserId() {
         UUID originalUserId= UUID.randomUUID();
+        String role="User";
 
-        String token = jwtService.generateToken(originalUserId);
+        String token = jwtService.generateToken(originalUserId,role);
         UUID parsedUserId = jwtService.parseUserId(token);
 
         assertEquals(originalUserId,parsedUserId);
@@ -32,7 +33,8 @@ public class JwtServiceTest {
     @Test
     void generateToken_returnsValidJwtFormat(){
         UUID originalUserId= UUID.randomUUID();
-        String token= jwtService.generateToken(originalUserId);
+        String role="User";
+        String token= jwtService.generateToken(originalUserId,role);
 
         assertNotNull(token);
         assertFalse(token.isEmpty());
@@ -43,7 +45,7 @@ public class JwtServiceTest {
     @Test
     void parseUserId_withInvalidToken_throwsException(){
         UUID originalUserId= UUID.randomUUID();
-        String token = jwtService.generateToken(originalUserId)+"error";
+        String token = jwtService.generateToken(originalUserId, "User")+"error";
 
         assertThrows(SignatureException.class,()->jwtService.parseUserId(token));
 

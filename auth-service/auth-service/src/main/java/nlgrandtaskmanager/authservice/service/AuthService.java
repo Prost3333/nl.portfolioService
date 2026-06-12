@@ -2,6 +2,7 @@ package nlgrandtaskmanager.authservice.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import nlgrandtaskmanager.authservice.model.Role;
 import nlgrandtaskmanager.authservice.model.User;
 import nlgrandtaskmanager.authservice.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ public class AuthService {
                 .email(email)
                 .passwordHash(passwordEncoder.encode(password))
                 .createdAt(Instant.now())
+                .role(Role.USER)
                 .build();
         userRepository.save(user);
     }
@@ -36,6 +38,6 @@ public class AuthService {
         if (!passwordEncoder.matches(password, user.getPasswordHash())){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid credentials");
         }
-        return jwtService.generateToken(user.getId());
+        return jwtService.generateToken(user.getId(),user.getRole().name());
     }
 }

@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-role-to-users
+      author: dima
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: role
+                  type: VARCHAR(20)
+                  defaultValue: USER
+                  constraints:
+                    nullable: false

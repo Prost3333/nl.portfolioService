@@ -78,7 +78,7 @@ class AuthServiceTest {
                 () -> authService.login(email, password)
         );
         assertEquals("Invalid credentials", ex.getReason());
-        verify(jwtService, never()).generateToken(any());
+        verify(jwtService, never()).generateToken(any(),any());
     }
 
     @Test
@@ -99,7 +99,7 @@ class AuthServiceTest {
                 ()-> authService.login(email,password));
 
         assertEquals("Invalid credentials",ex.getReason());
-        verify(jwtService,never()).generateToken(any());
+        verify(jwtService,never()).generateToken(any(),any());
 
     }
     @Test
@@ -116,12 +116,12 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(password,user.getPasswordHash())).thenReturn(true);
-        when(jwtService.generateToken(user.getId())).thenReturn("fake-jwt-token-123");
+        when(jwtService.generateToken(user.getId(),user.getRole().name())).thenReturn("fake-jwt-token-123");
 
         String result= authService.login(email, password);
         assertEquals("fake-jwt-token-123", result);
 
-        verify(jwtService).generateToken(user.getId());
+        verify(jwtService).generateToken(user.getId(),user.getRole().name());
 
     }
 }

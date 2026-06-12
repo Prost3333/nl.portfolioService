@@ -26,9 +26,10 @@ public class JwtService {
         );
     }
 
-    public String generateToken(UUID userId) {
+    public String generateToken(UUID userId,String role) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("role",role)
                 .setIssuedAt(new Date())
                 .setExpiration(
                         new Date(System.currentTimeMillis() + expiration)
@@ -45,5 +46,13 @@ public class JwtService {
                         .getBody()
                         .getSubject()
         );
+    }
+    public String parseRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
     }
 }
