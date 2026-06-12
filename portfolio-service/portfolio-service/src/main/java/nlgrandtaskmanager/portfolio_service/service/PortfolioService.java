@@ -101,10 +101,19 @@ public class PortfolioService {
         snapshotRepository.save(snapshot);
     }
 
-    public List<SnapshotResponse> getHistory(UUID userId){
-        return snapshotRepository.findByUserIdOrderBySnapshotDateAsc(userId)
+    public List<SnapshotResponse> getHistory(UUID userId, String period) {
+        LocalDate fromDate = switch (period) {
+            case "week"    -> LocalDate.now().minusWeeks(1);
+            case "month"   -> LocalDate.now().minusMonths(1);
+            case "6months" -> LocalDate.now().minusMonths(6);
+            case "year"    -> LocalDate.now().minusYears(1);
+            default        -> LocalDate.of(1970, 1, 1);  // "all" — берём всё
+        };
+
+        return snapshotRepository
+                .findByUserIdAndSnapshotDateGreaterThanEqualOrderBySnapshotDateAsc(userId, fromDate)
                 .stream()
-                .map(s->new SnapshotResponse(s.getSnapshotDate(),s.getTotalValue()))
+                .map(s -> new SnapshotResponse(s.getSnapshotDate(), s.getTotalValue()))
                 .toList();
     }
 

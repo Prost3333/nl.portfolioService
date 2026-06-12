@@ -118,6 +118,7 @@
             margin-bottom: 32px;
         }
 
+        .header-actions { display: flex; gap: 10px; }
         .logout-btn {
             width: auto;
             padding: 8px 16px;
@@ -127,6 +128,15 @@
             font-weight: 500;
         }
         .logout-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
+        .snapshot-btn {
+            width: auto;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            font-weight: 500;
+        }
+        .snapshot-btn:hover { background: var(--accent); color: #fff; opacity: 1; }
 
         .total-card {
             background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
@@ -223,6 +233,31 @@
         .form-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
         .form-msg.ok { color: var(--green); }
         .form-msg.err { color: var(--red); }
+
+        /* Переключатель периодов */
+        .period-switch { display: flex; gap: 6px; }
+        .period-btn {
+            width: auto;
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .period-btn:hover { border-color: var(--accent); color: var(--text); opacity: 1; }
+        .period-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .card-head h2 { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -253,7 +288,10 @@
                 <h1>Мой портфель</h1>
                 <div class="subtitle">Данные обновляются из Yahoo Finance</div>
             </div>
-            <button class="logout-btn" onclick="logout()">Выйти</button>
+            <div class="header-actions">
+                <button class="snapshot-btn" id="snapshot-btn" onclick="saveSnapshot()">Сохранить снимок</button>
+                <button class="logout-btn" onclick="logout()">Выйти</button>
+            </div>
         </div>
 
         <div class="total-card">
@@ -296,7 +334,16 @@
         </div>
 
         <div class="card" style="margin-top: 24px;">
-            <h2>Стоимость во времени</h2>
+            <div class="card-head">
+                <h2>Стоимость во времени</h2>
+                <div class="period-switch">
+                    <button class="period-btn" data-period="week" onclick="selectPeriod('week')">Неделя</button>
+                    <button class="period-btn" data-period="month" onclick="selectPeriod('month')">Месяц</button>
+                    <button class="period-btn" data-period="6months" onclick="selectPeriod('6months')">6 мес</button>
+                    <button class="period-btn" data-period="year" onclick="selectPeriod('year')">Год</button>
+                    <button class="period-btn active" data-period="all" onclick="selectPeriod('all')">Всё</button>
+                </div>
+            </div>
             <div class="chart-wrap">
                 <canvas id="history-chart"></canvas>
             </div>
@@ -314,6 +361,7 @@
     let token = null;
     let chart = null;
     let historyChart = null;
+    let currentPeriod = "all";   // выбранный период графика
 
     // Палитра для диаграммы
     const COLORS = [
@@ -513,10 +561,46 @@
         }
     }
 
+    // ===== Ручное сохранение снимка =====
+    async function saveSnapshot() {
+        const btn = document.getElementById("snapshot-btn");
+        btn.disabled = true;
+        btn.textContent = "Сохранение...";
+        try {
+            const resp = await fetch(PORTFOLIO_URL + "/portfolio/snapshot", {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (!resp.ok && resp.status !== 201) {
+                btn.textContent = "Ошибка (" + resp.status + ")";
+                setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+                return;
+            }
+
+            btn.textContent = "Снимок сохранён ✓";
+            await loadHistory();   // обновляем график во времени
+            setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+        } catch (e) {
+            btn.textContent = "Сервис недоступен";
+            setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+        }
+    }
+
+    // ===== Переключатель периодов =====
+    function selectPeriod(period) {
+        currentPeriod = period;
+        // подсветка активной кнопки
+        document.querySelectorAll(".period-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.period === period);
+        });
+        loadHistory();
+    }
+
     // ===== Загрузка истории (график во времени) =====
     async function loadHistory() {
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/history", {
+            const resp = await fetch(PORTFOLIO_URL + "/portfolio/history?period=" + currentPeriod, {
                 headers: { "Authorization": "Bearer " + token }
             });
             if (!resp.ok) return;
