@@ -48,7 +48,9 @@ public class PortfolioService {
                 continue;
             }
 
-            BigDecimal value = position.getQuantity().multiply(price);
+            BigDecimal value = position.getQuantity()
+                    .multiply(price)
+                    .setScale(2, RoundingMode.HALF_UP);
             rawValues.add(new PositionValue(
                     position.getTicker(),
                     position.getName(),
