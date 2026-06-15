@@ -71,7 +71,7 @@ class PriceServiceTest {
 
     @Test
     void getPrice_returnsNull_whenMetaIsNull() {
-        YahooResponse.YahooResult result = new YahooResponse.YahooResult(null);
+        YahooResponse.YahooResult result = new YahooResponse.YahooResult(null, null);
         YahooResponse.YahooChart chart = new YahooResponse.YahooChart(List.of(result));
         YahooResponse.YahooChartResponse response = new YahooResponse.YahooChartResponse(chart);
         givenRestClientReturns(response);
@@ -120,7 +120,7 @@ class PriceServiceTest {
 
     private YahooResponse.YahooChartResponse buildResponse(BigDecimal price) {
         YahooResponse.YahooMeta meta = new YahooResponse.YahooMeta(price, "USD");
-        YahooResponse.YahooResult result = new YahooResponse.YahooResult(meta);
+        YahooResponse.YahooResult result = new YahooResponse.YahooResult(meta,null);
         YahooResponse.YahooChart chart = new YahooResponse.YahooChart(List.of(result));
         return new YahooResponse.YahooChartResponse(chart);
     }

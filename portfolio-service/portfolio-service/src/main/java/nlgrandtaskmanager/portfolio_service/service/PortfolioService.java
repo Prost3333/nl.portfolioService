@@ -1,8 +1,8 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 import lombok.RequiredArgsConstructor;
+import nlgrandtaskmanager.portfolio_service.dto.PerformanceItem;
 import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
-import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
 import nlgrandtaskmanager.portfolio_service.dto.PositionValue;
 import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
 import nlgrandtaskmanager.portfolio_service.model.PortfolioSnapshot;
@@ -25,6 +25,7 @@ public class PortfolioService {
     private final PositionRepository positionRepository;
     private final PriceService priceService;
     private final PortfolioSnapshotRepository snapshotRepository;
+
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
         List<Position> positions = positionRepository.findByUserId(userId);
@@ -116,6 +117,28 @@ public class PortfolioService {
                 .findByUserIdAndSnapshotDateGreaterThanEqualOrderBySnapshotDateAsc(userId, fromDate)
                 .stream()
                 .map(s -> new SnapshotResponse(s.getSnapshotDate(), s.getTotalValue()))
+                .toList();
+    }
+
+    public List<PerformanceItem> getPerformance(UUID userId, String period) {
+        String range = switch (period) {
+            case "week"    -> "5d";
+            case "month"   -> "1mo";
+            case "6months" -> "6mo";
+            case "year"    -> "1y";
+            default        -> "1mo";
+        };
+
+        return positionRepository.findByUserId(userId).stream()
+                .map(position -> {
+                    BigDecimal change = priceService.getPriceChangePercent(position.getTicker(), range);
+                    return new PerformanceItem(
+                            position.getTicker(),
+                            position.getName(),
+                            change,
+                            change != null
+                    );
+                })
                 .toList();
     }
 

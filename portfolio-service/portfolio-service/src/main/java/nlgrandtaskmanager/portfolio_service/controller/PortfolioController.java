@@ -1,6 +1,7 @@
 package nlgrandtaskmanager.portfolio_service.controller;
 
 import lombok.RequiredArgsConstructor;
+import nlgrandtaskmanager.portfolio_service.dto.PerformanceItem;
 import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
 import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
 import nlgrandtaskmanager.portfolio_service.service.PortfolioService;
@@ -44,5 +45,13 @@ public class PortfolioController {
     @PreAuthorize("hasRole('ADMIN')")
     public List<SnapshotResponse> getAnySnapshots(@PathVariable UUID userId) {
         return portfolioService.getHistory(userId, "all");
+    }
+
+    @GetMapping("/performance")
+    public List<PerformanceItem> getPerformance(
+            Authentication authentication,
+            @RequestParam(defaultValue = "month") String period) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        return portfolioService.getPerformance(userId, period);
     }
 }

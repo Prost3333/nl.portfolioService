@@ -14,11 +14,20 @@ public class YahooResponse {
     public record YahooChart(List<YahooResult> result) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record YahooResult(YahooMeta meta) {}
+    public record YahooResult(YahooMeta meta, Indicators indicators) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record YahooMeta(
             @JsonProperty("regularMarketPrice") BigDecimal regularMarketPrice,
             String currency
+    ) {}
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Indicators(
+            List<Quote> quote
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Quote(
+            List<BigDecimal> close
     ) {}
 }

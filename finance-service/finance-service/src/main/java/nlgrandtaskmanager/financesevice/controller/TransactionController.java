@@ -81,8 +81,7 @@ public class TransactionController {
             @Valid @RequestBody CreateTransactionRequest request
     ) {
         UUID userId = (UUID) authentication.getPrincipal();
-        return service.update(use
-                rId, transactionId, request);
+        return service.update(userId, transactionId, request);
     }
 
 

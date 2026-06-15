@@ -27,7 +27,7 @@ public class RestClientConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("prices");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager("prices", "priceChanges");
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
                 .maximumSize(100));
