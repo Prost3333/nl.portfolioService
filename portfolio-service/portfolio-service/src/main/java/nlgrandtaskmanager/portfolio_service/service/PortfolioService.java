@@ -110,7 +110,7 @@ public class PortfolioService {
             case "month"   -> LocalDate.now().minusMonths(1);
             case "6months" -> LocalDate.now().minusMonths(6);
             case "year"    -> LocalDate.now().minusYears(1);
-            default        -> LocalDate.of(1970, 1, 1);  // "all" — берём всё
+            default        -> LocalDate.of(1970, 1, 1);
         };
 
         return snapshotRepository
@@ -121,13 +121,7 @@ public class PortfolioService {
     }
 
     public List<PerformanceItem> getPerformance(UUID userId, String period) {
-        String range = switch (period) {
-            case "week"    -> "5d";
-            case "month"   -> "1mo";
-            case "6months" -> "6mo";
-            case "year"    -> "1y";
-            default        -> "1mo";
-        };
+        String range=getRange(period);
 
         return positionRepository.findByUserId(userId).stream()
                 .map(position -> {
@@ -140,6 +134,40 @@ public class PortfolioService {
                     );
                 })
                 .toList();
+    }
+
+    public BigDecimal getPercentChanges (UUID userId,String period){
+
+        List<SnapshotResponse> list=getHistory(userId,period);
+        if (list.size()<2){
+            return null;
+        }
+
+        SnapshotResponse first=list.get(0);
+        SnapshotResponse last=list.get(list.size()-1);
+
+        if (first.totalValue() == null
+                || last.totalValue() == null
+                || first.totalValue().compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO;
+        }
+
+        return last.totalValue()
+                .subtract(first.totalValue())
+                .divide(first.totalValue(), 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
+
+    }
+
+    public  String getRange(String period){
+        return switch (period) {
+            case "week"    -> "5d";
+            case "month"   -> "1mo";
+            case "6months" -> "6mo";
+            case "year"    -> "1y";
+            default        -> "1mo";
+        };
     }
 
 }

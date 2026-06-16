@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,5 +54,12 @@ public class PortfolioController {
             @RequestParam(defaultValue = "month") String period) {
         UUID userId = (UUID) authentication.getPrincipal();
         return portfolioService.getPerformance(userId, period);
+    }
+
+    @GetMapping("/getPercent")
+    public BigDecimal getPercentChanges(Authentication authentication,
+                                                        @RequestParam(defaultValue = "all") String period){
+        UUID userId = (UUID) authentication.getPrincipal();
+        return portfolioService.getPercentChanges(userId,period);
     }
 }
