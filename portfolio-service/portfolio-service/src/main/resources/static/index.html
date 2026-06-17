@@ -147,6 +147,10 @@
         }
         .total-label { color: var(--text-dim); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
         .total-value { font-size: 42px; font-weight: 700; letter-spacing: -1px; margin-top: 4px; }
+        .total-change { font-size: 15px; font-weight: 600; margin-top: 6px; }
+        .total-change.up { color: #3fb950; }
+        .total-change.down { color: #f85149; }
+        .total-change.flat { color: var(--text-dim); }
 
         .grid {
             display: grid;
@@ -297,6 +301,7 @@
         <div class="total-card">
             <div class="total-label">Общая стоимость</div>
             <div class="total-value" id="total-value">—</div>
+            <div class="total-change" id="total-change"></div>
         </div>
 
         <div class="grid">
@@ -436,6 +441,7 @@
         if (chart) { chart.destroy(); chart = null; }
         if (historyChart) { historyChart.destroy(); historyChart = null; }
         if (performanceChart) { performanceChart.destroy(); performanceChart = null; }
+        document.getElementById("total-change").textContent = "";
         document.getElementById("dashboard-view").style.display = "none";
         document.getElementById("login-view").style.display = "block";
         document.getElementById("password").value = "";
@@ -460,6 +466,7 @@
             render(data);
             loadHistory();   // подгружаем историю для графика во времени
             loadPerformance(); // динамика бумаг за период
+            loadTotalChange(); // изменение всего портфеля в %
             loadPositions(); // список позиций для управления
         } catch (e) {
             tableEl.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
@@ -752,6 +759,32 @@
                 }
             }
         });
+    }
+
+    // ===== Изменение всего портфеля в % (по снимкам) =====
+    async function loadTotalChange() {
+        const el = document.getElementById("total-change");
+        try {
+            const resp = await fetch(PORTFOLIO_URL + "/portfolio/getPercent?period=all", {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!resp.ok) { el.textContent = ""; return; }
+
+            // бэкенд возвращает число или null (если снимков < 2)
+            const text = await resp.text();
+            if (!text || text === "null") {
+                el.textContent = "Недостаточно снимков для расчёта";
+                el.className = "total-change flat";
+                return;
+            }
+
+            const pct = Number(text);
+            const sign = pct > 0 ? "+" : "";              // минус и так есть у отрицательных
+            el.textContent = sign + pct.toFixed(2) + " % за всё время";
+            el.className = "total-change " + (pct > 0 ? "up" : pct < 0 ? "down" : "flat");
+        } catch (e) {
+            el.textContent = "";
+        }
     }
 
     // ===== Отрисовка =====
