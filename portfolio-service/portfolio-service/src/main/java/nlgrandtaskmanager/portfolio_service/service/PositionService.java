@@ -1,6 +1,7 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.dto.CreatePositionRequest;
@@ -12,24 +13,37 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PositionService {
     private  final PositionRepository positionRepository;
-
+   @Transactional
     public PositionResponse create (UUID userId, CreatePositionRequest request){
-        Position position=Position.builder()
-                .userId(userId)
-                .ticker(request.ticker())
-                .name(request.name())
-                .quantity(request.quantity())
-                .createdAt(Instant.now())
-                .build();
+        Position position;
+        Optional<Position> p = positionRepository.findByUserIdAndTicker(userId, request.ticker());
 
-        Position saved=positionRepository.save(position);
-        return  toResponse(saved);
+        if (p.isPresent()) {
+            position = p.get();
+            position.setQuantity(
+                    position.getQuantity().add(request.quantity())
+            );
+
+        } else {
+            position = Position.builder()
+                    .userId(userId)
+                    .ticker(request.ticker())
+                    .name(request.name())
+                    .quantity(request.quantity())
+                    .createdAt(Instant.now())
+                    .build();
+        }
+
+        Position saved = positionRepository.save(position);
+
+        return toResponse(saved);
     }
 
     public List<PositionResponse> getPositions(UUID userId) {
