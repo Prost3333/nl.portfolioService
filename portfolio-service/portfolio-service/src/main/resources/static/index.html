@@ -325,10 +325,6 @@
                     <input type="text" id="new-ticker" placeholder="AAPL">
                 </div>
                 <div class="field">
-                    <label for="new-name">Название</label>
-                    <input type="text" id="new-name" placeholder="Apple Inc.">
-                </div>
-                <div class="field">
                     <label for="new-quantity">Количество</label>
                     <input type="number" id="new-quantity" placeholder="10" min="0" step="any">
                 </div>
@@ -526,12 +522,11 @@
 
     async function addPosition() {
         const ticker = document.getElementById("new-ticker").value.trim().toUpperCase();
-        const name = document.getElementById("new-name").value.trim();
         const quantity = document.getElementById("new-quantity").value;
         const btn = document.getElementById("add-btn");
 
-        if (!ticker || !name || !quantity || Number(quantity) <= 0) {
-            showManageMsg("Заполните тикер, название и количество (больше нуля)", true);
+        if (!ticker || !quantity || Number(quantity) <= 0) {
+            showManageMsg("Заполните тикер и количество (больше нуля)", true);
             return;
         }
 
@@ -544,17 +539,22 @@
                     "Content-Type": "application/json",
                     "Authorization": "Bearer " + token
                 },
-                body: JSON.stringify({ ticker, name, quantity })
+                body: JSON.stringify({ ticker, quantity })
             });
 
             if (!resp.ok) {
-                showManageMsg("Не удалось добавить (" + resp.status + ")", true);
+                // бэкенд присылает {status, message, ...} — показываем message (напр. "Unknown ticker")
+                let msg = "Не удалось добавить (" + resp.status + ")";
+                try {
+                    const err = await resp.json();
+                    if (err && err.message) msg = err.message;
+                } catch (_) { /* тело не JSON — оставляем дефолт */ }
+                showManageMsg(msg, true);
                 return;
             }
 
             showManageMsg(ticker + " добавлена", false);
             document.getElementById("new-ticker").value = "";
-            document.getElementById("new-name").value = "";
             document.getElementById("new-quantity").value = "";
             await loadPortfolio(); // перезагружает summary, историю и список позиций
         } catch (e) {
@@ -899,7 +899,7 @@
     });
 
     // Enter в полях формы добавления = добавить позицию
-    for (const id of ["new-ticker", "new-name", "new-quantity"]) {
+    for (const id of ["new-ticker", "new-quantity"]) {
         document.getElementById(id).addEventListener("keydown", (e) => {
             if (e.key === "Enter") addPosition();
         });

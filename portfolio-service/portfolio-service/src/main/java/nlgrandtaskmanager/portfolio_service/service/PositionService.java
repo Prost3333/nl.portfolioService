@@ -1,6 +1,7 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 
+import nlgrandtaskmanager.portfolio_service.dto.TickerInfo;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.model.Position;
@@ -19,9 +20,12 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class PositionService {
-    private  final PositionRepository positionRepository;
-   @Transactional
-    public PositionResponse create (UUID userId, CreatePositionRequest request){
+    private final PositionRepository positionRepository;
+
+    private  final PriceService priceService;
+
+    @Transactional
+    public PositionResponse create(UUID userId, CreatePositionRequest request) {
         Position position;
         Optional<Position> p = positionRepository.findByUserIdAndTicker(userId, request.ticker());
 
@@ -32,10 +36,15 @@ public class PositionService {
             );
 
         } else {
+            TickerInfo quote=priceService.getQuote(request.ticker());
+            if (quote == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown ticker: " + request.ticker());
+            }
+            String name= quote.name();
             position = Position.builder()
                     .userId(userId)
                     .ticker(request.ticker())
-                    .name(request.name())
+                    .name(name)
                     .quantity(request.quantity())
                     .createdAt(Instant.now())
                     .build();

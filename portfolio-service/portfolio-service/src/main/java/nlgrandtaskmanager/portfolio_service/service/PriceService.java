@@ -1,6 +1,7 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 import nlgrandtaskmanager.portfolio_service.client.YahooResponse;
+import nlgrandtaskmanager.portfolio_service.dto.TickerInfo;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.client.RestClient;
 
@@ -106,5 +107,32 @@ public class PriceService {
         }
 
         return closes;
+    }
+
+    public TickerInfo getQuote(String ticker){
+        try {
+            YahooResponse.YahooChartResponse response = yahooRestClient.get()
+                    .uri("/v8/finance/chart/{ticker}", ticker)
+                    .retrieve()
+                    .body(YahooResponse.YahooChartResponse.class);
+
+            if (response == null
+                    || response.chart() == null
+                    || response.chart().result() == null
+                    || response.chart().result().isEmpty()) {
+                return null;
+            }
+
+            var meta = response.chart().result().get(0).meta();
+            if (meta == null || meta.regularMarketPrice() == null) {
+                return null;
+            }
+
+
+            return new TickerInfo(meta.regularMarketPrice(), meta.longName());
+
+        } catch (RestClientException e) {
+            return null;
+        }
     }
     }

@@ -19,7 +19,8 @@ public class YahooResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record YahooMeta(
             @JsonProperty("regularMarketPrice") BigDecimal regularMarketPrice,
-            String currency
+            String currency,
+            @JsonProperty("longName") String longName
     ) {}
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Indicators(
