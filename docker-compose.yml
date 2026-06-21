@@ -13,17 +13,6 @@ services:
     volumes:
       - auth_data:/var/lib/postgresql/data
 
-  postgres-finance:
-    image: postgres:15
-    container_name: postgres-finance
-    environment:
-      POSTGRES_DB: ${FINANCE_DB_NAME:-finance_db}
-      POSTGRES_USER: ${FINANCE_DB_USER:-finance}
-      POSTGRES_PASSWORD: ${FINANCE_DB_PASSWORD}
-    ports:
-      - "5434:5432"
-    volumes:
-      - finance_data:/var/lib/postgresql/data
 
   postgres-report:
     image: postgres:15
@@ -75,7 +64,6 @@ services:
 
 volumes:
   auth_data:
-  finance_data:
   report_data:
   portfolio_data:
 
