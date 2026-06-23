@@ -1,10 +1,8 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 import lombok.RequiredArgsConstructor;
-import nlgrandtaskmanager.portfolio_service.dto.PerformanceItem;
-import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
-import nlgrandtaskmanager.portfolio_service.dto.PositionValue;
-import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
+import nlgrandtaskmanager.portfolio_service.dto.*;
+import nlgrandtaskmanager.portfolio_service.kafka.SnapshotEventProducer;
 import nlgrandtaskmanager.portfolio_service.model.PortfolioSnapshot;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.repository.PortfolioSnapshotRepository;
@@ -25,6 +23,7 @@ public class PortfolioService {
     private final PositionRepository positionRepository;
     private final PriceService priceService;
     private final PortfolioSnapshotRepository snapshotRepository;
+    private  final SnapshotEventProducer snapshotEventProducer;
 
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
@@ -102,6 +101,10 @@ public class PortfolioService {
                 .build();
 
         snapshotRepository.save(snapshot);
+        snapshotEventProducer.publish(new SnapshotCreatedEvent(snapshot.getId()
+                ,snapshot.getUserId(),today,snapshot.getTotalValue()));
+
+
     }
 
     public List<SnapshotResponse> getHistory(UUID userId, String period) {
