@@ -1,12 +1,10 @@
 package nlgrandtaskmanager.reportservise.config;
 
+import nlgrandtaskmanager.reportservise.dto.SnapshotCreatedEvent;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.kafka.support.serializer.JsonSerializer;
-import nlgrandtaskmanager.reportservise.model.TransactionEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +20,7 @@ import java.util.Map;
 public class KafkaConsumerConfig {
 
     @Bean
-    public ConsumerFactory<String, TransactionEvent> consumerFactory() {
+    public ConsumerFactory<String, SnapshotCreatedEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
 
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -40,17 +38,17 @@ public class KafkaConsumerConfig {
 
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         props.put(JsonDeserializer.VALUE_DEFAULT_TYPE,
-                "nlgrandtaskmanager.reportservise.model.TransactionEvent");
+                "nlgrandtaskmanager.reportservise.dto.SnapshotCreatedEvent");
 
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, TransactionEvent>
+    public ConcurrentKafkaListenerContainerFactory<String, SnapshotCreatedEvent>
     kafkaListenerContainerFactory() {
 
-        ConcurrentKafkaListenerContainerFactory<String, TransactionEvent> factory =
+        ConcurrentKafkaListenerContainerFactory<String, SnapshotCreatedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
 
         factory.setConsumerFactory(consumerFactory());
