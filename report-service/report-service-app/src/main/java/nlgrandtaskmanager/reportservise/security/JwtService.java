@@ -35,4 +35,14 @@ public class JwtService {
                 .getBody();
 
         return UUID.fromString(claims.getSubject());
-}}
+}
+    public String parseRole(String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        return claims.get("role", String.class);
+    }
+}
