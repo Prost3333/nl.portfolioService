@@ -7,8 +7,11 @@ on:
     branches: [ main ]
 
 jobs:
-  build-portfolio:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ auth-service, portfolio-service, report-service ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -20,9 +23,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
-        working-directory: portfolio-service
+        working-directory: ${{ matrix.service }}
         run: chmod +x gradlew
 
-      - name: Build portfolio-service
-        working-directory: portfolio-service
+      - name: Build ${{ matrix.service }}
+        working-directory: ${{ matrix.service }}
         run: ./gradlew build -x test
