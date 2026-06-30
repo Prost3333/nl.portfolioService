@@ -1,5 +1,7 @@
 # Portfolio Tracking Platform
 
+![CI](https://github.com/Prost3333/nl.portfolioService/actions/workflows/ci.yml/badge.svg)
+
 A microservice platform for tracking an investment portfolio: positions, live
 prices, value snapshots over time, and aggregated cross-user statistics.
 Built with **Spring Boot 3 / Java 17**, JWT authentication, asynchronous event
