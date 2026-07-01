@@ -119,7 +119,7 @@ class PriceServiceTest {
     }
 
     private YahooResponse.YahooChartResponse buildResponse(BigDecimal price) {
-        YahooResponse.YahooMeta meta = new YahooResponse.YahooMeta(price, "USD");
+        YahooResponse.YahooMeta meta = new YahooResponse.YahooMeta(price," ", "USD");
         YahooResponse.YahooResult result = new YahooResponse.YahooResult(meta,null);
         YahooResponse.YahooChart chart = new YahooResponse.YahooChart(List.of(result));
         return new YahooResponse.YahooChartResponse(chart);

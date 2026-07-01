@@ -7,25 +7,36 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-portfolio:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [ auth-service, portfolio-service, report-service ]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+      - name: Grant execute permission for gradlew
+        working-directory: portfolio-service
+        run: chmod +x gradlew
+      - name: Build & test portfolio-service
+        working-directory: portfolio-service
+        run: ./gradlew build
 
+
+  build-others:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [ auth-service, report-service ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
       - name: Grant execute permission for gradlew
         working-directory: ${{ matrix.service }}
         run: chmod +x gradlew
-
       - name: Build ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
-        run: ./gradlew build -x test
+        run: ./gradlew build -x test  

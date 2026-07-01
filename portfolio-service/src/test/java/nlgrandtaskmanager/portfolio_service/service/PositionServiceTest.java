@@ -2,6 +2,7 @@ package nlgrandtaskmanager.portfolio_service.service;
 
 import nlgrandtaskmanager.portfolio_service.dto.CreatePositionRequest;
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
+import nlgrandtaskmanager.portfolio_service.dto.TickerInfo;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,9 @@ class PositionServiceTest {
     @Mock
     private PositionRepository positionRepository;
 
+    @Mock
+    private PriceService priceService;
+
     @InjectMocks
     private PositionService positionService;
 
@@ -37,9 +41,10 @@ class PositionServiceTest {
 
     @Test
     void create_savesPositionWithCorrectFields() {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", "Apple Inc", BigDecimal.TEN);
+        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.TEN);
         Position saved = buildPosition(UUID.randomUUID(), userId, "AAPL", "Apple Inc", BigDecimal.TEN);
 
+        when(priceService.getQuote("AAPL")).thenReturn(new TickerInfo(BigDecimal.TEN, "Apple Inc"));
         when(positionRepository.save(any(Position.class))).thenReturn(saved);
 
         PositionResponse response = positionService.create(userId, request);

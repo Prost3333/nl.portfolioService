@@ -10,8 +10,8 @@ import nlgrandtaskmanager.portfolio_service.service.PositionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -41,10 +41,10 @@ class PositionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private PositionService positionService;
 
-    @MockBean
+    @MockitoBean
     private JwtService jwtService;
 
     private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -57,7 +57,7 @@ class PositionControllerTest {
 
     @Test
     void createPosition_returns201_withValidRequest() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", "Apple Inc", BigDecimal.TEN);
+        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.TEN);
         PositionResponse response = new PositionResponse(UUID.randomUUID(), "AAPL", "Apple Inc", BigDecimal.TEN, Instant.now());
 
         when(positionService.create(eq(USER_ID), any())).thenReturn(response);
@@ -68,24 +68,12 @@ class PositionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.ticker").value("AAPL"))
-                .andExpect(jsonPath("$.name").value("Apple Inc"))
                 .andExpect(jsonPath("$.quantity").value(10));
     }
 
     @Test
     void createPosition_returns400_whenTickerIsBlank() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("", "Apple Inc", BigDecimal.TEN);
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createPosition_returns400_whenNameIsBlank() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", "   ", BigDecimal.TEN);
+        CreatePositionRequest request = new CreatePositionRequest("", BigDecimal.TEN);
 
         mockMvc.perform(post("/positions")
                         .with(authentication(auth()))
@@ -109,7 +97,7 @@ class PositionControllerTest {
 
     @Test
     void createPosition_returns400_whenQuantityIsNegative() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", "Apple Inc", new BigDecimal("-5"));
+        CreatePositionRequest request = new CreatePositionRequest("AAPL", new BigDecimal("-5"));
 
         mockMvc.perform(post("/positions")
                         .with(authentication(auth()))
@@ -120,7 +108,7 @@ class PositionControllerTest {
 
     @Test
     void createPosition_returns400_whenQuantityIsZero() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", "Apple Inc", BigDecimal.ZERO);
+        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.ZERO);
 
         mockMvc.perform(post("/positions")
                         .with(authentication(auth()))
