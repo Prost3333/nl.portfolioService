@@ -78,7 +78,8 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 - **Apache Kafka** (Confluent 7.6) — event-driven communication
 - **Caffeine Cache** — Yahoo Finance quote cache (5 min TTL)
 - **Testcontainers**, JUnit 5 — integration tests
-- **Docker Compose** — databases, Kafka, Zookeeper
+- **Docker / Docker Compose** — full stack: all three services (built from
+  per-service `Dockerfile`s), the three PostgreSQL databases, Kafka, Zookeeper
 
 ---
 
@@ -86,8 +87,8 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 
 ### 1. Prerequisites
 
-- Docker and Docker Compose
-- JDK 17 (to run the services locally)
+- Docker and Docker Compose (enough to run the whole stack)
+- JDK 17 — only needed if you want to run a service outside of Docker
 
 ### 2. Configure environment variables
 
@@ -97,29 +98,28 @@ cp .env.example .env
 # you can generate a secret with: openssl rand -base64 32
 ```
 
-### 3. Start the infrastructure (databases + Kafka)
+### 3. Start the full stack
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
-This starts: `postgres-auth`, `postgres-report`, `postgres-portfolio`,
-`zookeeper`, and `kafka`.
+This builds and starts everything: the three services (`auth-service`,
+`portfolio-service`, `report-service`), their databases (`postgres-auth`,
+`postgres-report`, `postgres-portfolio`), plus `zookeeper` and `kafka`. Add
+`-d` to run detached.
 
-### 4. Run the services
+Once up, the services are reachable on `localhost:8081` (auth), `localhost:8084`
+(portfolio), and `localhost:8083` (report).
 
-Each service is a standalone Gradle project. Run `bootRun` from the service
-directory:
+### Running a service outside Docker (optional)
+
+Each service is also a standalone Gradle project. To run one locally against the
+Dockerized infrastructure, start the databases/Kafka only and use `bootRun`:
 
 ```bash
-# auth-service
-cd auth-service && ./gradlew bootRun
-
-# portfolio-service
+docker compose up -d postgres-auth postgres-portfolio postgres-report kafka zookeeper
 cd portfolio-service && ./gradlew bootRun
-
-# report-service
-cd report-service && ./gradlew bootRun
 ```
 
 > On Windows use `gradlew.bat` instead of `./gradlew`.
@@ -231,10 +231,13 @@ database is required.
 
 ## CI
 
-GitHub Actions (`.github/workflows/ci.yml`) builds all three services on every
-push and pull request to `main`, using a matrix strategy (`auth-service`,
-`portfolio-service`, `report-service`) on JDK 17. Build runs `./gradlew build -x
-test` per service.
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request
+to `main` on JDK 17, in two jobs:
+
+- **`build-portfolio`** — builds **and tests** `portfolio-service`
+  (`./gradlew build`, Testcontainers integration tests included).
+- **`build-others`** — a matrix over `auth-service` and `report-service` that
+  builds them without tests (`./gradlew build -x test`).
 
 ---
 
@@ -242,10 +245,10 @@ test` per service.
 
 ```
 .
-├── docker-compose.yml          # PostgreSQL × 3, Kafka, Zookeeper
+├── docker-compose.yml          # full stack: 3 services + PostgreSQL × 3 + Kafka + Zookeeper
 ├── .env.example                # environment variable template
-├── .github/workflows/ci.yml    # CI build (matrix over 3 services)
-├── auth-service/               # authentication service
-├── portfolio-service/          # investment portfolio service (Kafka producer)
-└── report-service/             # aggregation service (Kafka consumer)
+├── .github/workflows/ci.yml    # CI (test portfolio, build auth/report)
+├── auth-service/               # authentication service (+ Dockerfile)
+├── portfolio-service/          # investment portfolio service, Kafka producer (+ Dockerfile)
+└── report-service/             # aggregation service, Kafka consumer (+ Dockerfile)
 ```
