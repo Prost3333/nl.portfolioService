@@ -78,6 +78,31 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
+  auth-service:
+    build: ./auth-service
+    depends_on:
+      - postgres-auth
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://postgres-auth:5432/auth_db
+      DB_USERNAME: auth
+      DB_PASSWORD: auth
+      JWT_SECRET: ${JWT_SECRET}
+
+  report-service:
+    build: ./report-service
+    depends_on:
+      - postgres-report
+      - kafka
+    ports:
+      - "8083:8083"
+    environment:
+      DB_URL: jdbc:postgresql://postgres-report:5432/report_db
+      DB_USERNAME: report
+      DB_PASSWORD: report
+      JWT_SECRET: ${JWT_SECRET}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
 
 volumes:
   auth_data:
