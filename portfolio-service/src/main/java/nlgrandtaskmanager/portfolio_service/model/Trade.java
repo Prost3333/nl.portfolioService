@@ -2,19 +2,21 @@ package nlgrandtaskmanager.portfolio_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nlgrandtaskmanager.portfolio_service.enums.TradeType;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "positions")
+@Table(name = "trades")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Position {
+public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -23,11 +25,14 @@ public class Position {
     @Column(nullable = false)
     private String ticker;
     @Column(nullable = false)
-    private String name;
-    @Column(nullable = false)
     private BigDecimal quantity;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
-    @Column(name = "average_price")
-    private BigDecimal averagePrice;
+    @Column(nullable = false)
+    private BigDecimal price;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TradeType type;
+    @Column(name = "trade_date", nullable = false)
+    private LocalDate tradeDate;
 }

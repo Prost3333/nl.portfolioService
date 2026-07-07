@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-average-price-to-positions
+      author: Prost3333
+      changes:
+        - addColumn:
+            tableName: positions
+            columns:
+              - column:
+                  name: average_price
+                  type: NUMERIC(19,4)
+                  constraints:
+                    nullable: true

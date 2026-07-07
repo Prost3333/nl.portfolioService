@@ -3,3 +3,7 @@ databaseChangeLog:
       file: db/changelog/changes/001-create-positions-table.yaml
   - include:
       file: db/changelog/changes/002-create-snapshots-table.yaml
+  - include:
+      file: db/changelog/changes/003-add-average-price-to-positions.yaml
+  - include:
+      file: db/changelog/changes/004-create-trades-table.yaml
