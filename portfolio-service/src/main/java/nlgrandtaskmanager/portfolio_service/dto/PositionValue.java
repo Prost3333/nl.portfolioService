@@ -8,6 +8,14 @@ public record PositionValue(String ticker,
                             BigDecimal price,
                             BigDecimal value,
                             BigDecimal allocation,
+                            BigDecimal averagePrice,
+                            BigDecimal unrealizedPL,
+                            BigDecimal unrealizedPLPercent,
                             boolean priceAvailable
 ) {
+
+    public PositionValue withAllocation(BigDecimal allocation) {
+        return new PositionValue(ticker, name, quantity, price, value, allocation,
+                averagePrice, unrealizedPL, unrealizedPLPercent, priceAvailable);
+    }
 }

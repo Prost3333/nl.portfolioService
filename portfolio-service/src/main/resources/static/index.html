@@ -75,6 +75,18 @@
             transition: border-color 0.15s;
         }
         .field input:focus { border-color: var(--accent); }
+        .field select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .field select:focus { border-color: var(--accent); }
 
         button {
             width: 100%;
@@ -147,6 +159,10 @@
         }
         .total-label { color: var(--text-dim); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
         .total-value { font-size: 42px; font-weight: 700; letter-spacing: -1px; margin-top: 4px; }
+        .total-pl { font-size: 18px; font-weight: 700; margin-top: 8px; }
+        .total-pl.up { color: var(--green); }
+        .total-pl.down { color: var(--red); }
+        .total-pl.flat { color: var(--text-dim); }
         .total-change { font-size: 15px; font-weight: 600; margin-top: 6px; }
         .total-change.up { color: #3fb950; }
         .total-change.down { color: #f85149; }
@@ -188,6 +204,9 @@
         tr:last-child td { border-bottom: none; }
         .ticker { font-weight: 600; }
         .name-dim { color: var(--text-dim); font-size: 12px; }
+        td.pl-up { color: var(--green); font-weight: 600; }
+        td.pl-down { color: var(--red); font-weight: 600; }
+        #positions-table { overflow-x: auto; }
         .alloc-bar {
             display: inline-block;
             height: 6px;
@@ -212,7 +231,7 @@
         /* Управление позициями */
         .add-form {
             display: grid;
-            grid-template-columns: 130px 1fr 130px auto;
+            grid-template-columns: repeat(5, 1fr) auto;
             gap: 12px;
             align-items: end;
             margin-bottom: 20px;
@@ -301,6 +320,7 @@
         <div class="total-card">
             <div class="total-label">Общая стоимость</div>
             <div class="total-value" id="total-value">—</div>
+            <div class="total-pl" id="total-pl"></div>
             <div class="total-change" id="total-change"></div>
         </div>
 
@@ -318,7 +338,7 @@
         </div>
 
         <div class="card" style="margin-top: 24px;">
-            <h2>Управление позициями</h2>
+            <h2>Добавить сделку</h2>
             <div class="add-form">
                 <div class="field">
                     <label for="new-ticker">Тикер</label>
@@ -328,7 +348,22 @@
                     <label for="new-quantity">Количество</label>
                     <input type="number" id="new-quantity" placeholder="10" min="0" step="any">
                 </div>
-                <button class="add-btn" id="add-btn" onclick="addPosition()">Добавить</button>
+                <div class="field">
+                    <label for="new-price">Цена</label>
+                    <input type="number" id="new-price" placeholder="124.30" min="0" step="any">
+                </div>
+                <div class="field">
+                    <label for="new-type">Тип</label>
+                    <select id="new-type">
+                        <option value="BUY">Покупка</option>
+                        <option value="SELL">Продажа</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="new-date">Дата</label>
+                    <input type="date" id="new-date">
+                </div>
+                <button class="add-btn" id="add-btn" onclick="addTrade()">Добавить сделку</button>
             </div>
             <div class="form-msg" id="manage-msg"></div>
             <div id="manage-table"></div>
@@ -520,31 +555,41 @@
         el.className = "form-msg " + (isError ? "err" : "ok");
     }
 
-    async function addPosition() {
+    async function addTrade() {
         const ticker = document.getElementById("new-ticker").value.trim().toUpperCase();
         const quantity = document.getElementById("new-quantity").value;
+        const price = document.getElementById("new-price").value;
+        const type = document.getElementById("new-type").value;
+        const tradeDate = document.getElementById("new-date").value; // пусто → бэкенд ставит сегодня
         const btn = document.getElementById("add-btn");
 
         if (!ticker || !quantity || Number(quantity) <= 0) {
             showManageMsg("Заполните тикер и количество (больше нуля)", true);
             return;
         }
+        if (!price || Number(price) <= 0) {
+            showManageMsg("Укажите цену сделки (больше нуля)", true);
+            return;
+        }
 
         btn.disabled = true;
         btn.textContent = "Добавление...";
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/positions", {
+            const body = { ticker, quantity, price, type };
+            if (tradeDate) body.tradeDate = tradeDate;
+
+            const resp = await fetch(PORTFOLIO_URL + "/trade/trades", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer " + token
                 },
-                body: JSON.stringify({ ticker, quantity })
+                body: JSON.stringify(body)
             });
 
-            if (!resp.ok) {
+            if (!resp.ok && resp.status !== 201) {
                 // бэкенд присылает {status, message, ...} — показываем message (напр. "Unknown ticker")
-                let msg = "Не удалось добавить (" + resp.status + ")";
+                let msg = "Не удалось добавить сделку (" + resp.status + ")";
                 try {
                     const err = await resp.json();
                     if (err && err.message) msg = err.message;
@@ -553,15 +598,17 @@
                 return;
             }
 
-            showManageMsg(ticker + " добавлена", false);
+            const typeLabel = type === "SELL" ? "Продажа" : "Покупка";
+            showManageMsg(typeLabel + " " + ticker + " добавлена", false);
             document.getElementById("new-ticker").value = "";
             document.getElementById("new-quantity").value = "";
-            await loadPortfolio(); // перезагружает summary, историю и список позиций
+            document.getElementById("new-price").value = "";
+            await loadPortfolio(); // пересчитает позицию (кол-во + средняя) и P/L
         } catch (e) {
             showManageMsg("portfolio-service недоступен", true);
         } finally {
             btn.disabled = false;
-            btn.textContent = "Добавить";
+            btn.textContent = "Добавить сделку";
         }
     }
 
@@ -793,6 +840,21 @@
         document.getElementById("total-value").textContent =
             "€ " + formatMoney(data.totalValue);
 
+        // Общий P/L портфеля
+        const plEl = document.getElementById("total-pl");
+        if (data.totalUnrealizedPL == null) {
+            plEl.textContent = "";
+            plEl.className = "total-pl";
+        } else {
+            const n = Number(data.totalUnrealizedPL);
+            let text = "Прибыль/убыток: " + formatSignedMoney(data.totalUnrealizedPL);
+            if (data.totalUnrealizedPLPercent != null) {
+                text += " (" + formatSignedPercent(data.totalUnrealizedPLPercent) + ")";
+            }
+            plEl.textContent = text;
+            plEl.className = "total-pl " + (n > 0 ? "up" : n < 0 ? "down" : "flat");
+        }
+
         // Сортируем по стоимости (убывание); битые (value null) — в конец
         const positions = [...data.positions].sort((a, b) => {
             const va = a.priceAvailable ? Number(a.value) : -1;
@@ -845,7 +907,10 @@
             '<th>Бумага</th>' +
             '<th class="num">Кол-во</th>' +
             '<th class="num">Цена</th>' +
+            '<th class="num">Средняя</th>' +
             '<th class="num">Стоимость</th>' +
+            '<th class="num">P/L</th>' +
+            '<th class="num">P/L %</th>' +
             '<th class="num">Доля</th>' +
             '</tr></thead><tbody>';
 
@@ -856,17 +921,29 @@
                     '<td><div class="ticker">' + p.ticker + '</div>' +
                     '<div class="name-dim">' + escapeHtml(p.name.trim()) + '</div></td>' +
                     '<td class="num">' + formatNum(p.quantity) + '</td>' +
-                    '<td class="num" colspan="3"><span class="badge-na">цена недоступна</span></td>' +
+                    '<td class="num" colspan="6"><span class="badge-na">цена недоступна</span></td>' +
                     '</tr>';
                 continue;
             }
             const alloc = Number(p.allocation);
+            const avgCell = p.averagePrice != null
+                ? '<td class="num">€ ' + formatMoney(p.averagePrice) + '</td>'
+                : '<td class="num">—</td>';
+            const plCell = p.unrealizedPL != null
+                ? '<td class="num ' + plClass(p.unrealizedPL) + '">' + formatSignedMoney(p.unrealizedPL) + '</td>'
+                : '<td class="num">—</td>';
+            const plPctCell = p.unrealizedPLPercent != null
+                ? '<td class="num ' + plClass(p.unrealizedPLPercent) + '">' + formatSignedPercent(p.unrealizedPLPercent) + '</td>'
+                : '<td class="num">—</td>';
             html += '<tr>' +
                 '<td><div class="ticker">' + p.ticker + '</div>' +
                 '<div class="name-dim">' + escapeHtml(p.name.trim()) + '</div></td>' +
                 '<td class="num">' + formatNum(p.quantity) + '</td>' +
                 '<td class="num">€ ' + formatMoney(p.price) + '</td>' +
+                avgCell +
                 '<td class="num">€ ' + formatMoney(p.value) + '</td>' +
+                plCell +
+                plPctCell +
                 '<td class="num">' +
                     '<span class="alloc-bar" style="width:' + Math.max(2, alloc) + 'px"></span>' +
                     alloc.toFixed(1) + '%</td>' +
@@ -887,6 +964,22 @@
     function formatNum(v) {
         return Number(v).toLocaleString("de-DE", { maximumFractionDigits: 4 });
     }
+    // P/L со знаком: «+€ 247,20» / «−€ 92,25»
+    function formatSignedMoney(v) {
+        const n = Number(v);
+        const sign = n > 0 ? "+" : n < 0 ? "−" : "";
+        return sign + "€ " + formatMoney(Math.abs(n));
+    }
+    // P/L % со знаком: «+11,04 %» / «−21,52 %»
+    function formatSignedPercent(v) {
+        const n = Number(v);
+        const sign = n > 0 ? "+" : n < 0 ? "−" : "";
+        return sign + formatMoney(Math.abs(n)) + " %";
+    }
+    function plClass(v) {
+        const n = Number(v);
+        return n > 0 ? "pl-up" : n < 0 ? "pl-down" : "";
+    }
     function escapeHtml(s) {
         const div = document.createElement("div");
         div.textContent = s;
@@ -898,12 +991,19 @@
         if (e.key === "Enter") login();
     });
 
-    // Enter в полях формы добавления = добавить позицию
-    for (const id of ["new-ticker", "new-quantity"]) {
+    // Enter в полях формы добавления = добавить сделку
+    for (const id of ["new-ticker", "new-quantity", "new-price"]) {
         document.getElementById(id).addEventListener("keydown", (e) => {
-            if (e.key === "Enter") addPosition();
+            if (e.key === "Enter") addTrade();
         });
     }
+
+    // Дата сделки по умолчанию — сегодня (в локальной таймзоне)
+    (function setDefaultTradeDate() {
+        const d = new Date();
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+        document.getElementById("new-date").value = local.toISOString().slice(0, 10);
+    })();
 </script>
 </body>
 </html>

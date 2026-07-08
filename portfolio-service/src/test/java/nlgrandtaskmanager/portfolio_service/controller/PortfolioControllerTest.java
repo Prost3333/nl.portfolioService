@@ -9,9 +9,9 @@ import nlgrandtaskmanager.portfolio_service.service.PortfolioService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -30,10 +30,10 @@ class PortfolioControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private PortfolioService portfolioService;
 
-    @MockBean
+    @MockitoBean
     private JwtService jwtService;
 
     private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -47,10 +47,10 @@ class PortfolioControllerTest {
         PositionValue positionValue = new PositionValue(
                 "AAPL", "Apple", BigDecimal.TEN,
                 new BigDecimal("150"), new BigDecimal("1500"),
-                new BigDecimal("100"), true
+                new BigDecimal("100"), null, null, null, true
         );
         PortfolioSummaryResponse summary = new PortfolioSummaryResponse(
-                new BigDecimal("1500"), List.of(positionValue)
+                new BigDecimal("1500"), null, null, List.of(positionValue)
         );
 
         when(portfolioService.getSummary(USER_ID)).thenReturn(summary);
@@ -69,7 +69,7 @@ class PortfolioControllerTest {
 
     @Test
     void getSummary_returns200_withEmptyPortfolio() throws Exception {
-        PortfolioSummaryResponse summary = new PortfolioSummaryResponse(BigDecimal.ZERO, List.of());
+        PortfolioSummaryResponse summary = new PortfolioSummaryResponse(BigDecimal.ZERO, null, null, List.of());
 
         when(portfolioService.getSummary(USER_ID)).thenReturn(summary);
 
@@ -84,10 +84,10 @@ class PortfolioControllerTest {
     void getSummary_returns200_withUnavailablePrice() throws Exception {
         PositionValue positionValue = new PositionValue(
                 "UNKNOWN", "Unknown Corp", BigDecimal.TEN,
-                null, null, BigDecimal.ZERO, false
+                null, null, BigDecimal.ZERO, null, null, null, false
         );
         PortfolioSummaryResponse summary = new PortfolioSummaryResponse(
-                BigDecimal.ZERO, List.of(positionValue)
+                BigDecimal.ZERO, null, null, List.of(positionValue)
         );
 
         when(portfolioService.getSummary(USER_ID)).thenReturn(summary);

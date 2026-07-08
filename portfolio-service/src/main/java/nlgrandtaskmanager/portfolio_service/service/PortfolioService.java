@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -23,67 +23,88 @@ public class PortfolioService {
     private final PositionRepository positionRepository;
     private final PriceService priceService;
     private final PortfolioSnapshotRepository snapshotRepository;
-    private  final SnapshotEventProducer snapshotEventProducer;
+    private final SnapshotEventProducer snapshotEventProducer;
 
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
-        List<Position> positions = positionRepository.findByUserId(userId);
+        List<PositionValue> values = positionRepository.findByUserId(userId).stream()
+                .map(this::toPositionValue)
+                .toList();
 
-        List<PositionValue> rawValues = new ArrayList<>();
-        BigDecimal total = BigDecimal.ZERO;
-
-        for (Position position : positions) {
-            BigDecimal price = priceService.getPrice(position.getTicker());
-
-            if (price == null) {
-                rawValues.add(new PositionValue(
-                        position.getTicker(),
-                        position.getName(),
-                        position.getQuantity(),
-                        null,
-                        null,
-                        BigDecimal.ZERO,
-                        false
-                ));
-                continue;
-            }
-
-            BigDecimal value = position.getQuantity()
-                    .multiply(price)
-                    .setScale(2, RoundingMode.HALF_UP);
-            rawValues.add(new PositionValue(
-                    position.getTicker(),
-                    position.getName(),
-                    position.getQuantity(),
-                    price,
-                    value,
-                    BigDecimal.ZERO,
-                    true
-            ));
-            total = total.add(value);
+        BigDecimal totalValue = sumValues(values);
+        if (totalValue.compareTo(BigDecimal.ZERO) == 0) {
+            return new PortfolioSummaryResponse(BigDecimal.ZERO, null, null, values);
         }
 
-        if (total.compareTo(BigDecimal.ZERO) == 0) {
-            return new PortfolioSummaryResponse(BigDecimal.ZERO, rawValues);
+        List<PositionValue> positions = values.stream()
+                .map(pv -> pv.priceAvailable() ? pv.withAllocation(allocationOf(pv, totalValue)) : pv)
+                .toList();
+
+        BigDecimal totalUnrealizedPL = sumUnrealizedPL(positions);
+        BigDecimal totalCostBasis = sumCostBasis(positions);
+        BigDecimal totalUnrealizedPLPercent = totalCostBasis.compareTo(BigDecimal.ZERO) > 0
+                ? percentOf(totalUnrealizedPL, totalCostBasis)
+                : null;
+
+        return new PortfolioSummaryResponse(totalValue, totalUnrealizedPL, totalUnrealizedPLPercent, positions);
+    }
+
+    private PositionValue toPositionValue(Position position) {
+        BigDecimal price = priceService.getPrice(position.getTicker());
+        if (price == null) {
+            return new PositionValue(position.getTicker(), position.getName(), position.getQuantity(),
+                    null, null, BigDecimal.ZERO, null, null, null, false);
         }
 
+        BigDecimal value = position.getQuantity()
+                .multiply(price)
+                .setScale(2, RoundingMode.HALF_UP);
 
-        List<PositionValue> result = new ArrayList<>();
-        for (PositionValue pv : rawValues) {
-            if (!pv.priceAvailable()) {
-                result.add(pv);
-                continue;
-            }
-            BigDecimal percent = pv.value()
-                    .divide(total, 4, RoundingMode.HALF_UP)
-                    .multiply(BigDecimal.valueOf(100));
-            result.add(new PositionValue(
-                    pv.ticker(), pv.name(), pv.quantity(),
-                    pv.price(), pv.value(), percent, true
-            ));
+        BigDecimal averagePrice = position.getAveragePrice();
+        BigDecimal unrealizedPL = null;
+        BigDecimal unrealizedPLPercent = null;
+        if (averagePrice != null && averagePrice.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal costBasis = averagePrice.multiply(position.getQuantity());
+            unrealizedPL = value.subtract(costBasis).setScale(2, RoundingMode.HALF_UP);
+            unrealizedPLPercent = percentOf(unrealizedPL, costBasis);
         }
 
-        return new PortfolioSummaryResponse(total, result);
+        return new PositionValue(position.getTicker(), position.getName(), position.getQuantity(),
+                price, value, BigDecimal.ZERO, averagePrice, unrealizedPL, unrealizedPLPercent, true);
+    }
+
+    private static BigDecimal sumValues(List<PositionValue> positions) {
+        return positions.stream()
+                .filter(PositionValue::priceAvailable)
+                .map(PositionValue::value)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static BigDecimal sumUnrealizedPL(List<PositionValue> positions) {
+        return positions.stream()
+                .map(PositionValue::unrealizedPL)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static BigDecimal sumCostBasis(List<PositionValue> positions) {
+        return positions.stream()
+                .filter(pv -> pv.priceAvailable() && pv.averagePrice() != null)
+                .map(pv -> pv.averagePrice().multiply(pv.quantity()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static BigDecimal allocationOf(PositionValue position, BigDecimal totalValue) {
+        return position.value()
+                .divide(totalValue, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+    }
+
+    private static BigDecimal percentOf(BigDecimal amount, BigDecimal base) {
+        return amount
+                .divide(base, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     public void saveSnapshot(UUID userId) {
@@ -102,18 +123,18 @@ public class PortfolioService {
 
         snapshotRepository.save(snapshot);
         snapshotEventProducer.publish(new SnapshotCreatedEvent(snapshot.getId()
-                ,snapshot.getUserId(),today,snapshot.getTotalValue()));
+                , snapshot.getUserId(), today, snapshot.getTotalValue()));
 
 
     }
 
     public List<SnapshotResponse> getHistory(UUID userId, String period) {
         LocalDate fromDate = switch (period) {
-            case "week"    -> LocalDate.now().minusWeeks(1);
-            case "month"   -> LocalDate.now().minusMonths(1);
+            case "week" -> LocalDate.now().minusWeeks(1);
+            case "month" -> LocalDate.now().minusMonths(1);
             case "6months" -> LocalDate.now().minusMonths(6);
-            case "year"    -> LocalDate.now().minusYears(1);
-            default        -> LocalDate.of(1970, 1, 1);
+            case "year" -> LocalDate.now().minusYears(1);
+            default -> LocalDate.of(1970, 1, 1);
         };
 
         return snapshotRepository
@@ -124,7 +145,7 @@ public class PortfolioService {
     }
 
     public List<PerformanceItem> getPerformance(UUID userId, String period) {
-        String range=getRange(period);
+        String range = getRange(period);
 
         return positionRepository.findByUserId(userId).stream()
                 .map(position -> {
@@ -139,15 +160,15 @@ public class PortfolioService {
                 .toList();
     }
 
-    public BigDecimal getPercentChanges (UUID userId,String period){
+    public BigDecimal getPercentChanges(UUID userId, String period) {
 
-        List<SnapshotResponse> list=getHistory(userId,period);
-        if (list.size()<2){
+        List<SnapshotResponse> list = getHistory(userId, period);
+        if (list.size() < 2) {
             return null;
         }
 
-        SnapshotResponse first=list.get(0);
-        SnapshotResponse last=list.get(list.size()-1);
+        SnapshotResponse first = list.get(0);
+        SnapshotResponse last = list.get(list.size() - 1);
 
         if (first.totalValue() == null
                 || last.totalValue() == null
@@ -163,13 +184,13 @@ public class PortfolioService {
 
     }
 
-    public  String getRange(String period){
+    public String getRange(String period) {
         return switch (period) {
-            case "week"    -> "5d";
-            case "month"   -> "1mo";
+            case "week" -> "5d";
+            case "month" -> "1mo";
             case "6months" -> "6mo";
-            case "year"    -> "1y";
-            default        -> "1mo";
+            case "year" -> "1y";
+            default -> "1mo";
         };
     }
 
