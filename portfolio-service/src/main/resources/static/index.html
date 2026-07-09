@@ -3,292 +3,501 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio Dashboard</title>
+    <title>Portfolio — дашборд</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --surface-2: #1c2333;
-            --border: #2d333b;
-            --text: #e6edf3;
-            --text-dim: #8b949e;
-            --accent: #2f81f7;
-            --green: #3fb950;
-            --red: #f85149;
-            --radius: 12px;
+            --bg: #0b0d12;
+            --surface: #141821;
+            --surface-2: #1a2029;
+            --surface-3: #212836;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-strong: rgba(255, 255, 255, 0.13);
+            --text: #f2f5f9;
+            --text-2: #9aa4b2;
+            --text-3: #6b7482;
+            --accent: #3987e5;
+            --accent-soft: rgba(57, 135, 229, 0.14);
+            --up: #0ca30c;
+            --up-soft: rgba(12, 163, 12, 0.13);
+            --down: #e05d5d;
+            --down-soft: rgba(224, 93, 93, 0.12);
+            --grid: #232a35;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        html { scrollbar-gutter: stable; }
+
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* мягкое свечение фона */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(600px 320px at 12% -5%, rgba(57, 135, 229, 0.10), transparent 70%),
+                radial-gradient(700px 380px at 90% 0%, rgba(144, 133, 233, 0.07), transparent 70%);
+            z-index: 0;
         }
 
         .container {
-            max-width: 1100px;
+            position: relative;
+            max-width: 1240px;
             margin: 0 auto;
-            padding: 32px 24px;
+            padding: 0 24px 48px;
+            z-index: 1;
         }
 
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 4px;
+        /* ===== Шапка ===== */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            background: rgba(11, 13, 18, 0.72);
+            border-bottom: 1px solid var(--border);
+        }
+        .topbar-inner {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #3987e5, #9085e9);
+            display: grid; place-items: center;
+            font-weight: 800; font-size: 16px; color: #fff;
+            box-shadow: 0 4px 14px rgba(57, 135, 229, 0.35);
+        }
+        .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -0.2px; }
+        .brand-sub { font-size: 12px; color: var(--text-3); }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .updated-at { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+        @media (max-width: 640px) {
+            .brand-sub, .updated-at { display: none; }
+            .topbar-inner { padding: 12px 16px; }
+            .container { padding: 0 14px 40px; }
         }
 
-        .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; }
+        /* ===== Кнопки ===== */
+        button {
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s, transform 0.1s;
+        }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:active:not(:disabled) { transform: translateY(1px); }
 
-        /* Login */
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            padding: 10px 18px;
+        }
+        .btn-primary:hover:not(:disabled) { background: #2a78d6; }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            color: var(--text-2);
+            padding: 8px 14px;
+            font-weight: 500;
+        }
+        .btn-ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+        .btn-ghost.danger:hover:not(:disabled) { border-color: var(--down); color: var(--down); }
+
+        /* ===== Вход ===== */
         #login-view {
-            max-width: 380px;
-            margin: 80px auto;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 32px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
         }
-
-        #login-view h1 { text-align: center; margin-bottom: 24px; }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(180deg, var(--surface-2), var(--surface));
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px 32px;
+            box-shadow: var(--shadow);
+        }
+        .login-head { text-align: center; margin-bottom: 28px; }
+        .login-head .brand-mark { width: 48px; height: 48px; font-size: 22px; border-radius: 14px; margin: 0 auto 14px; }
+        .login-head h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+        .login-head p { font-size: 13px; color: var(--text-2); margin-top: 4px; }
 
         .field { margin-bottom: 16px; }
         .field label {
             display: block;
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 6px;
-        }
-        .field input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-        .field input:focus { border-color: var(--accent); }
-        .field select {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.15s;
-        }
-        .field select:focus { border-color: var(--accent); }
-
-        button {
-            width: 100%;
-            padding: 11px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.15s;
+            color: var(--text-2);
+            margin-bottom: 6px;
+            letter-spacing: 0.2px;
         }
-        button:hover { opacity: 0.9; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .field input, .field select {
+            width: 100%;
+            padding: 11px 13px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .field input:focus, .field select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
 
         .error {
-            color: var(--red);
+            color: var(--down);
             font-size: 13px;
             margin-top: 12px;
             text-align: center;
             min-height: 18px;
         }
-
-        .register-link {
-            margin-top: 8px;
-            text-align: center;
-            font-size: 13px;
-            color: var(--text-dim);
-        }
-        .register-link a { color: var(--accent); text-decoration: none; }
+        .register-link { margin-top: 12px; text-align: center; font-size: 13px; color: var(--text-2); }
+        .register-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
         .register-link a:hover { text-decoration: underline; }
 
-        /* Dashboard */
+        /* ===== Дашборд ===== */
         #dashboard-view { display: none; }
 
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 32px;
-        }
+        .section { margin-top: 24px; }
 
-        .header-actions { display: flex; gap: 10px; }
-        .logout-btn {
-            width: auto;
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            font-weight: 500;
+        /* Плитки-показатели */
+        .tiles {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
         }
-        .logout-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
-        .snapshot-btn {
-            width: auto;
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            font-weight: 500;
-        }
-        .snapshot-btn:hover { background: var(--accent); color: #fff; opacity: 1; }
+        @media (max-width: 1000px) { .tiles { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 560px)  { .tiles { grid-template-columns: 1fr; } }
 
-        .total-card {
-            background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+        .tile {
+            background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 28px;
-            margin-bottom: 24px;
+            padding: 20px 22px;
+            min-width: 0;
         }
-        .total-label { color: var(--text-dim); font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
-        .total-value { font-size: 42px; font-weight: 700; letter-spacing: -1px; margin-top: 4px; }
-        .total-pl { font-size: 18px; font-weight: 700; margin-top: 8px; }
-        .total-pl.up { color: var(--green); }
-        .total-pl.down { color: var(--red); }
-        .total-pl.flat { color: var(--text-dim); }
-        .total-change { font-size: 15px; font-weight: 600; margin-top: 6px; }
-        .total-change.up { color: #3fb950; }
-        .total-change.down { color: #f85149; }
-        .total-change.flat { color: var(--text-dim); }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 24px;
+        .tile-hero {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 60%);
         }
-        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        .tile-hero > div:first-child { position: relative; z-index: 1; }
+        .tile-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-2);
+            letter-spacing: 0.3px;
+        }
+        .hero-value {
+            font-size: clamp(30px, 3.4vw, 44px);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.15;
+            margin-top: 6px;
+            white-space: nowrap;
+        }
+        .hero-delta { font-size: 14px; font-weight: 600; margin-top: 6px; }
+        .hero-note { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+        .spark-wrap {
+            position: absolute;
+            right: 14px; bottom: 10px;
+            width: 40%; max-width: 220px; height: 58px;
+            pointer-events: none;
+        }
+        #sparkline { width: 100%; height: 58px; }
 
+        .tile-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-top: 8px; }
+        .tile-sub { font-size: 13px; margin-top: 4px; color: var(--text-2); }
+        .tile .ticker-big { font-size: 20px; font-weight: 700; margin-top: 8px; }
+
+        .up   { color: var(--up); }
+        .down { color: var(--down); }
+        .flat { color: var(--text-2); }
+
+        .pill {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 9px;
+            border-radius: 999px;
+            vertical-align: middle;
+        }
+        .pill.up   { background: var(--up-soft);   color: var(--up); }
+        .pill.down { background: var(--down-soft); color: var(--down); }
+        .pill.flat { background: var(--surface-3); color: var(--text-2); }
+
+        /* Карточки */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 24px;
-        }
-        .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
-
-        .chart-wrap { position: relative; height: 320px; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th {
-            text-align: left;
-            color: var(--text-dim);
-            font-weight: 500;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 8px 8px;
-            border-bottom: 1px solid var(--border);
-        }
-        th.num, td.num { text-align: right; }
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid var(--border);
-        }
-        tr:last-child td { border-bottom: none; }
-        .ticker { font-weight: 600; }
-        .name-dim { color: var(--text-dim); font-size: 12px; }
-        td.pl-up { color: var(--green); font-weight: 600; }
-        td.pl-down { color: var(--red); font-weight: 600; }
-        #positions-table { overflow-x: auto; }
-        .alloc-bar {
-            display: inline-block;
-            height: 6px;
-            background: var(--accent);
-            border-radius: 3px;
-            vertical-align: middle;
-            margin-right: 6px;
-        }
-
-        .loading { text-align: center; color: var(--text-dim); padding: 40px; }
-
-        tr.unavailable td { opacity: 0.5; }
-        .badge-na {
-            display: inline-block;
-            font-size: 11px;
-            color: var(--red);
-            border: 1px solid var(--red);
-            border-radius: 4px;
-            padding: 1px 6px;
-        }
-
-        /* Управление позициями */
-        .add-form {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr) auto;
-            gap: 12px;
-            align-items: end;
-            margin-bottom: 20px;
-        }
-        @media (max-width: 768px) { .add-form { grid-template-columns: 1fr; } }
-        .add-form .field { margin-bottom: 0; }
-        .add-btn {
-            width: auto;
-            padding: 10px 20px;
-            white-space: nowrap;
-        }
-        .delete-btn {
-            width: auto;
-            padding: 5px 12px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .delete-btn:hover { border-color: var(--red); color: var(--red); opacity: 1; }
-        .form-msg { font-size: 13px; margin-top: 10px; min-height: 18px; }
-        .form-msg.ok { color: var(--green); }
-        .form-msg.err { color: var(--red); }
-
-        /* Переключатель периодов */
-        .period-switch { display: flex; gap: 6px; }
-        .period-btn {
-            width: auto;
-            padding: 5px 12px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            font-size: 12px;
-            font-weight: 500;
-        }
-        .period-btn:hover { border-color: var(--accent); color: var(--text); opacity: 1; }
-        .period-btn.active {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
+            padding: 22px;
+            min-width: 0;
         }
         .card-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
         }
-        .card-head h2 { margin-bottom: 0; }
+        .card-head h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+        .card-head .head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .grid-main {
+            display: grid;
+            grid-template-columns: 330px 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 980px) { .grid-main { grid-template-columns: 1fr; } }
+
+        .grid-charts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 980px) { .grid-charts { grid-template-columns: 1fr; } }
+
+        .chart-wrap { position: relative; height: 300px; }
+        .chart-wrap.tall { height: 330px; }
+
+        /* Легенда доната */
+        .donut-legend { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .donut-legend-item {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px;
+        }
+        .donut-legend-item .swatch {
+            width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+        }
+        .donut-legend-item .lt { font-weight: 600; }
+        .donut-legend-item .lp { margin-left: auto; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+        /* Таблица позиций */
+        .search-input {
+            width: 190px;
+            padding: 8px 12px;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            text-align: left;
+            color: var(--text-3);
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 8px 7px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            user-select: none;
+        }
+        th.sortable { cursor: pointer; }
+        th.sortable:hover { color: var(--text); }
+        th.sorted { color: var(--accent); }
+        th .arr { font-size: 10px; margin-left: 3px; }
+        th.num, td.num { text-align: right; }
+        td {
+            padding: 11px 7px;
+            border-bottom: 1px solid var(--border);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        tbody tr { transition: background 0.12s; }
+        tbody tr:hover { background: var(--surface-2); }
+        tr:last-child td { border-bottom: none; }
+        .ticker { font-weight: 700; }
+        .name-dim { color: var(--text-3); font-size: 11.5px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+        td.pl-up { color: var(--up); font-weight: 600; }
+        td.pl-down { color: var(--down); font-weight: 600; }
+
+        .alloc-cell { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+        .alloc-track {
+            width: 40px; height: 5px;
+            background: var(--surface-3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .alloc-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+
+        tr.unavailable td { opacity: 0.5; }
+        .badge-na {
+            display: inline-block;
+            font-size: 11px;
+            color: var(--down);
+            background: var(--down-soft);
+            border-radius: 5px;
+            padding: 2px 8px;
+        }
+
+        .row-del {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-3);
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1;
+            padding: 5px 8px;
+            border-radius: 7px;
+        }
+        .row-del:hover { color: var(--down); border-color: var(--down); }
+        .row-del.armed { color: #fff; background: var(--down); border-color: var(--down); }
+
+        .loading { text-align: center; color: var(--text-3); padding: 40px; font-size: 13px; }
+        .empty-state { text-align: center; padding: 44px 20px; color: var(--text-2); }
+        .empty-state .big { font-size: 34px; margin-bottom: 10px; }
+        .empty-state .hint { font-size: 13px; color: var(--text-3); margin-top: 4px; }
+
+        /* затухание при обновлении вместо мигающего скелетона */
+        .refreshing { opacity: 0.55; transition: opacity 0.2s; pointer-events: none; }
+
+        /* скелетоны первичной загрузки */
+        .skeleton {
+            border-radius: 8px;
+            background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+        }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+        @media (prefers-reduced-motion: reduce) {
+            .skeleton { animation: none; }
+        }
+
+        /* Форма сделки */
+        .trade-form {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 1.2fr 1.1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+        @media (max-width: 900px) { .trade-form { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 560px) { .trade-form { grid-template-columns: 1fr; } }
+        .trade-form .field { margin-bottom: 0; }
+
+        .seg {
+            display: flex;
+            background: var(--bg);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            gap: 3px;
+        }
+        .seg button {
+            flex: 1;
+            padding: 8px 10px;
+            background: transparent;
+            color: var(--text-2);
+            font-size: 13px;
+            border-radius: 7px;
+        }
+        .seg button.active-buy  { background: var(--up-soft);   color: var(--up); }
+        .seg button.active-sell { background: var(--down-soft); color: var(--down); }
+
+        .trade-total { font-size: 12.5px; color: var(--text-3); margin-top: 10px; min-height: 18px; }
+        .trade-total b { color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+        /* Переключатели периодов */
+        .period-switch { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px; }
+        .period-btn {
+            padding: 5px 11px;
+            background: transparent;
+            color: var(--text-2);
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 7px;
+        }
+        .period-btn:hover { color: var(--text); }
+        .period-btn.active { background: var(--surface-3); color: var(--text); }
+
+        /* Тосты */
+        #toasts {
+            position: fixed;
+            right: 20px; bottom: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            z-index: 100;
+        }
+        .toast {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 13.5px;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+            animation: toast-in 0.25s ease-out;
+            max-width: 340px;
+        }
+        @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
+        .toast.out { transition: opacity 0.3s, transform 0.3s; opacity: 0; transform: translateY(8px); }
+        .toast .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .toast.ok .dot { background: var(--up); }
+        .toast.err .dot { background: var(--down); }
+        .toast.info .dot { background: var(--accent); }
+        @media (prefers-reduced-motion: reduce) {
+            .toast { animation: none; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
 
-    <!-- LOGIN -->
-    <div id="login-view">
-        <h1>Portfolio</h1>
+<!-- ВХОД -->
+<div id="login-view">
+    <div class="login-card">
+        <div class="login-head">
+            <div class="brand-mark">P</div>
+            <h1>Portfolio</h1>
+            <p>Войдите, чтобы увидеть свой портфель</p>
+        </div>
         <div class="field">
             <label for="email">Email</label>
             <input type="email" id="email" placeholder="you@example.com" autocomplete="username">
@@ -297,111 +506,150 @@
             <label for="password">Пароль</label>
             <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
         </div>
-        <button id="login-btn" onclick="login()">Войти</button>
+        <button class="btn-primary" style="width:100%" id="login-btn" onclick="login()">Войти</button>
         <div class="error" id="login-error"></div>
         <div class="register-link">
             Нет аккаунта? <a href="http://localhost:8081/">Зарегистрироваться</a>
         </div>
     </div>
+</div>
 
-    <!-- DASHBOARD -->
-    <div id="dashboard-view">
-        <div class="header-row">
-            <div>
-                <h1>Мой портфель</h1>
-                <div class="subtitle">Данные обновляются из Yahoo Finance</div>
-            </div>
-            <div class="header-actions">
-                <button class="snapshot-btn" id="snapshot-btn" onclick="saveSnapshot()">Сохранить снимок</button>
-                <button class="logout-btn" onclick="logout()">Выйти</button>
-            </div>
-        </div>
-
-        <div class="total-card">
-            <div class="total-label">Общая стоимость</div>
-            <div class="total-value" id="total-value">—</div>
-            <div class="total-pl" id="total-pl"></div>
-            <div class="total-change" id="total-change"></div>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h2>Распределение</h2>
-                <div class="chart-wrap">
-                    <canvas id="pie-chart"></canvas>
+<!-- ДАШБОРД -->
+<div id="dashboard-view">
+    <div class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <div class="brand-mark">P</div>
+                <div>
+                    <div class="brand-name">Portfolio</div>
+                    <div class="brand-sub">Котировки: Yahoo Finance</div>
                 </div>
             </div>
-            <div class="card">
-                <h2>Позиции</h2>
-                <div id="positions-table"></div>
+            <div class="topbar-actions">
+                <span class="updated-at" id="updated-at"></span>
+                <button class="btn-ghost" id="refresh-btn" onclick="refreshAll()">Обновить</button>
+                <button class="btn-ghost" id="snapshot-btn" onclick="saveSnapshot()">Сохранить снимок</button>
+                <button class="btn-ghost danger" onclick="logout()">Выйти</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <!-- Плитки-показатели -->
+        <div class="tiles" id="tiles">
+            <div class="tile tile-hero">
+                <div style="min-width:0">
+                    <div class="tile-label">Общая стоимость</div>
+                    <div class="hero-value" id="total-value"><span class="skeleton" style="display:inline-block;width:180px;height:40px"></span></div>
+                    <div class="hero-delta" id="total-pl"></div>
+                    <div class="hero-note" id="total-change"></div>
+                </div>
+                <div class="spark-wrap"><canvas id="sparkline"></canvas></div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">Прибыль / убыток</div>
+                <div class="tile-value" id="tile-pl"><span class="skeleton" style="display:inline-block;width:90px;height:22px"></span></div>
+                <div class="tile-sub" id="tile-pl-pct"></div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">Лучшая бумага</div>
+                <div class="ticker-big" id="tile-best"><span class="skeleton" style="display:inline-block;width:70px;height:20px"></span></div>
+                <div class="tile-sub" id="tile-best-sub"></div>
+            </div>
+            <div class="tile">
+                <div class="tile-label">Худшая бумага</div>
+                <div class="ticker-big" id="tile-worst"><span class="skeleton" style="display:inline-block;width:70px;height:20px"></span></div>
+                <div class="tile-sub" id="tile-worst-sub"></div>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 24px;">
-            <h2>Добавить сделку</h2>
-            <div class="add-form">
+        <!-- Распределение + позиции -->
+        <div class="grid-main section">
+            <div class="card" id="alloc-card">
+                <div class="card-head"><h2>Распределение</h2></div>
+                <div class="chart-wrap"><canvas id="pie-chart"></canvas></div>
+                <div class="donut-legend" id="donut-legend"></div>
+            </div>
+            <div class="card" id="positions-card">
+                <div class="card-head">
+                    <h2>Позиции</h2>
+                    <div class="head-actions">
+                        <input type="text" class="search-input" id="search-input" placeholder="Поиск по тикеру…" oninput="renderTable()">
+                        <button class="btn-ghost" onclick="exportCsv()">CSV</button>
+                    </div>
+                </div>
+                <div class="table-scroll" id="positions-table">
+                    <div class="loading">Загрузка цен из Yahoo…</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Добавить сделку -->
+        <div class="card section">
+            <div class="card-head"><h2>Добавить сделку</h2></div>
+            <div class="trade-form">
+                <div class="field">
+                    <label>Тип сделки</label>
+                    <div class="seg">
+                        <button type="button" id="seg-buy" class="active-buy" onclick="setTradeType('BUY')">Покупка</button>
+                        <button type="button" id="seg-sell" onclick="setTradeType('SELL')">Продажа</button>
+                    </div>
+                </div>
                 <div class="field">
                     <label for="new-ticker">Тикер</label>
-                    <input type="text" id="new-ticker" placeholder="AAPL">
+                    <input type="text" id="new-ticker" placeholder="AAPL" autocomplete="off" oninput="this.value=this.value.toUpperCase(); updateTradeTotal()">
                 </div>
                 <div class="field">
                     <label for="new-quantity">Количество</label>
-                    <input type="number" id="new-quantity" placeholder="10" min="0" step="any">
+                    <input type="number" id="new-quantity" placeholder="10" min="0" step="any" oninput="updateTradeTotal()">
                 </div>
                 <div class="field">
-                    <label for="new-price">Цена</label>
-                    <input type="number" id="new-price" placeholder="124.30" min="0" step="any">
-                </div>
-                <div class="field">
-                    <label for="new-type">Тип</label>
-                    <select id="new-type">
-                        <option value="BUY">Покупка</option>
-                        <option value="SELL">Продажа</option>
-                    </select>
+                    <label for="new-price">Цена за штуку, €</label>
+                    <input type="number" id="new-price" placeholder="124.30" min="0" step="any" oninput="updateTradeTotal()">
                 </div>
                 <div class="field">
                     <label for="new-date">Дата</label>
                     <input type="date" id="new-date">
                 </div>
-                <button class="add-btn" id="add-btn" onclick="addTrade()">Добавить сделку</button>
+                <button class="btn-primary" id="add-btn" onclick="addTrade()">Добавить</button>
             </div>
-            <div class="form-msg" id="manage-msg"></div>
-            <div id="manage-table"></div>
+            <div class="trade-total" id="trade-total"></div>
         </div>
 
-        <div class="card" style="margin-top: 24px;">
-            <div class="card-head">
-                <h2>Стоимость во времени</h2>
-                <div class="period-switch">
-                    <button class="period-btn" data-period="week" onclick="selectPeriod('week')">Неделя</button>
-                    <button class="period-btn" data-period="month" onclick="selectPeriod('month')">Месяц</button>
-                    <button class="period-btn" data-period="6months" onclick="selectPeriod('6months')">6 мес</button>
-                    <button class="period-btn" data-period="year" onclick="selectPeriod('year')">Год</button>
-                    <button class="period-btn active" data-period="all" onclick="selectPeriod('all')">Всё</button>
+        <!-- Графики -->
+        <div class="grid-charts section">
+            <div class="card" id="history-card">
+                <div class="card-head">
+                    <h2>Стоимость во времени</h2>
+                    <div class="period-switch">
+                        <button class="period-btn" data-period="week" onclick="selectPeriod('week')">Нед</button>
+                        <button class="period-btn" data-period="month" onclick="selectPeriod('month')">Мес</button>
+                        <button class="period-btn" data-period="6months" onclick="selectPeriod('6months')">6 мес</button>
+                        <button class="period-btn" data-period="year" onclick="selectPeriod('year')">Год</button>
+                        <button class="period-btn active" data-period="all" onclick="selectPeriod('all')">Всё</button>
+                    </div>
                 </div>
+                <div class="chart-wrap tall"><canvas id="history-chart"></canvas></div>
             </div>
-            <div class="chart-wrap">
-                <canvas id="history-chart"></canvas>
+            <div class="card" id="perf-card">
+                <div class="card-head">
+                    <h2>Динамика бумаг</h2>
+                    <div class="period-switch">
+                        <button class="period-btn perf-btn" data-perf="week" onclick="selectPerfPeriod('week')">Нед</button>
+                        <button class="period-btn perf-btn active" data-perf="month" onclick="selectPerfPeriod('month')">Мес</button>
+                        <button class="period-btn perf-btn" data-perf="6months" onclick="selectPerfPeriod('6months')">6 мес</button>
+                        <button class="period-btn perf-btn" data-perf="year" onclick="selectPerfPeriod('year')">Год</button>
+                    </div>
+                </div>
+                <div class="chart-wrap tall"><canvas id="performance-chart"></canvas></div>
             </div>
         </div>
 
-        <div class="card" style="margin-top: 24px;">
-            <div class="card-head">
-                <h2>Динамика бумаг за период</h2>
-                <div class="period-switch">
-                    <button class="period-btn perf-btn" data-perf="week" onclick="selectPerfPeriod('week')">Неделя</button>
-                    <button class="period-btn perf-btn active" data-perf="month" onclick="selectPerfPeriod('month')">Месяц</button>
-                    <button class="period-btn perf-btn" data-perf="6months" onclick="selectPerfPeriod('6months')">6 мес</button>
-                    <button class="period-btn perf-btn" data-perf="year" onclick="selectPerfPeriod('year')">Год</button>
-                </div>
-            </div>
-            <div class="chart-wrap">
-                <canvas id="performance-chart"></canvas>
-            </div>
-        </div>
     </div>
-
 </div>
+
+<div id="toasts"></div>
 
 <script>
     // ===== Конфигурация =====
@@ -412,14 +660,71 @@
     let token = null;
     let chart = null;
     let historyChart = null;
-    let currentPeriod = "all";   // выбранный период графика
     let performanceChart = null;
-    let perfPeriod = "month";    // выбранный период динамики бумаг
-    // Палитра для диаграммы
-    const COLORS = [
-        "#2f81f7", "#3fb950", "#db61a2", "#f0883e", "#a371f7",
-        "#56d4dd", "#e3b341", "#f85149", "#7ee787", "#ff9bce"
-    ];
+    let currentPeriod = "all";
+    let perfPeriod = "month";
+    let tradeType = "BUY";
+
+    // данные текущего summary + карта тикер→id (для удаления) и тикер→цвет (стабильные цвета)
+    let summaryPositions = [];
+    let positionIds = {};
+    let colorByTicker = {};
+    let firstLoad = true;
+
+    // Категориальная палитра (валидирована на поверхности карточек, CVD-safe)
+    const COLORS = ["#3987e5", "#199e70", "#c98500", "#9085e9", "#e66767", "#d55181", "#d95926"];
+    const OTHER_COLOR = "#6b7482";
+    const CSS = {
+        surface: "#141821", grid: "#232a35",
+        text2: "#9aa4b2", text3: "#6b7482",
+        accent: "#3987e5", up: "#0ca30c", down: "#e05d5d"
+    };
+
+    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+    Chart.defaults.color = CSS.text3;
+
+    function tooltipStyle() {
+        return {
+            backgroundColor: "#1a2029",
+            borderColor: "rgba(255,255,255,0.13)",
+            borderWidth: 1,
+            titleColor: "#f2f5f9",
+            bodyColor: "#9aa4b2",
+            padding: 10,
+            cornerRadius: 8,
+            displayColors: false
+        };
+    }
+
+    // ===== Тосты =====
+    function toast(text, type = "info") {
+        const el = document.createElement("div");
+        el.className = "toast " + type;
+        el.innerHTML = '<span class="dot"></span><span></span>';
+        el.lastElementChild.textContent = text;
+        document.getElementById("toasts").appendChild(el);
+        setTimeout(() => {
+            el.classList.add("out");
+            setTimeout(() => el.remove(), 350);
+        }, 3500);
+    }
+
+    // ===== HTTP-обёртка (единая обработка 401) =====
+    async function api(path, options = {}) {
+        const resp = await fetch(PORTFOLIO_URL + path, {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                "Authorization": "Bearer " + token
+            }
+        });
+        if (resp.status === 401 && token) {
+            logout();
+            toast("Сессия истекла — войдите заново", "err");
+            throw new Error("unauthorized");
+        }
+        return resp;
+    }
 
     // ===== Логин =====
     async function login() {
@@ -435,7 +740,7 @@
         }
 
         btn.disabled = true;
-        btn.textContent = "Вход...";
+        btn.textContent = "Вход…";
 
         try {
             const resp = await fetch(AUTH_URL + "/auth/login", {
@@ -453,14 +758,15 @@
 
             const data = await resp.json();
             token = data.token;
+            firstLoad = true;
 
-            // Переключаемся на дашборд
             document.getElementById("login-view").style.display = "none";
             document.getElementById("dashboard-view").style.display = "block";
 
-            await loadPortfolio();
+            await refreshAll();
         } catch (e) {
-            errorEl.textContent = "Сервер недоступен. Запущен ли auth-service?";
+            if (e.message !== "unauthorized")
+                errorEl.textContent = "Сервер недоступен. Запущен ли auth-service?";
         } finally {
             btn.disabled = false;
             btn.textContent = "Войти";
@@ -469,121 +775,395 @@
 
     function logout() {
         token = null;
-        if (chart) { chart.destroy(); chart = null; }
-        if (historyChart) { historyChart.destroy(); historyChart = null; }
-        if (performanceChart) { performanceChart.destroy(); performanceChart = null; }
-        document.getElementById("total-change").textContent = "";
+        for (const c of [chart, historyChart, performanceChart]) if (c) c.destroy();
+        chart = historyChart = performanceChart = null;
+        summaryPositions = [];
+        positionIds = {};
         document.getElementById("dashboard-view").style.display = "none";
-        document.getElementById("login-view").style.display = "block";
+        document.getElementById("login-view").style.display = "flex";
         document.getElementById("password").value = "";
     }
 
-    // ===== Загрузка портфеля =====
+    // ===== Полное обновление =====
+    async function refreshAll() {
+        const btn = document.getElementById("refresh-btn");
+        btn.disabled = true;
+        // при повторной загрузке не мигаем скелетоном — приглушаем текущее
+        if (!firstLoad) {
+            for (const id of ["tiles", "alloc-card", "positions-card"])
+                document.getElementById(id).classList.add("refreshing");
+        }
+        try {
+            await Promise.allSettled([
+                loadPortfolio(),
+                loadHistory(),
+                loadPerformance(),
+                loadTotalChange(),
+                loadSparkline(),
+                loadPositionIds()
+            ]);
+            const t = new Date();
+            document.getElementById("updated-at").textContent =
+                "Обновлено " + t.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+            firstLoad = false;
+        } finally {
+            btn.disabled = false;
+            for (const id of ["tiles", "alloc-card", "positions-card"])
+                document.getElementById(id).classList.remove("refreshing");
+        }
+    }
+
+    // ===== Портфель (summary) =====
     async function loadPortfolio() {
         const tableEl = document.getElementById("positions-table");
-        tableEl.innerHTML = '<div class="loading">Загрузка цен из Yahoo...</div>';
-
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/summary", {
-                headers: { "Authorization": "Bearer " + token }
-            });
-
+            const resp = await api("/portfolio/summary");
             if (!resp.ok) {
                 tableEl.innerHTML = '<div class="loading">Ошибка загрузки (' + resp.status + ')</div>';
                 return;
             }
-
-            const data = await resp.json();
-            render(data);
-            loadHistory();   // подгружаем историю для графика во времени
-            loadPerformance(); // динамика бумаг за период
-            loadTotalChange(); // изменение всего портфеля в %
-            loadPositions(); // список позиций для управления
+            render(await resp.json());
         } catch (e) {
-            tableEl.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
+            if (e.message !== "unauthorized")
+                tableEl.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
         }
     }
 
-    // ===== Управление позициями (добавление / удаление) =====
-    async function loadPositions() {
-        const el = document.getElementById("manage-table");
+    async function loadPositionIds() {
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/positions", {
-                headers: { "Authorization": "Bearer " + token }
-            });
-            if (!resp.ok) {
-                el.innerHTML = '<div class="loading">Ошибка загрузки позиций (' + resp.status + ')</div>';
-                return;
-            }
-            renderManageTable(await resp.json());
-        } catch (e) {
-            el.innerHTML = '<div class="loading">portfolio-service недоступен</div>';
-        }
+            const resp = await api("/positions");
+            if (!resp.ok) return;
+            const positions = await resp.json();
+            positionIds = {};
+            for (const p of positions) positionIds[p.ticker] = p.id;
+            // summary мог отрисоваться раньше, чем пришли id — дорисовываем кнопки удаления
+            if (summaryPositions.length) renderTable();
+        } catch (e) { /* без id просто не будет кнопки удаления */ }
     }
 
-    function renderManageTable(positions) {
-        const el = document.getElementById("manage-table");
-        if (positions.length === 0) {
-            el.innerHTML = '<div class="loading">Позиций пока нет — добавьте первую</div>';
+    function render(data) {
+        // Плитка-герой: общая стоимость с анимацией
+        animateNumber(document.getElementById("total-value"), Number(data.totalValue));
+
+        const plEl = document.getElementById("total-pl");
+        const tilePl = document.getElementById("tile-pl");
+        const tilePlPct = document.getElementById("tile-pl-pct");
+        if (data.totalUnrealizedPL == null) {
+            plEl.textContent = "";
+            tilePl.textContent = "—";
+            tilePlPct.textContent = "";
+        } else {
+            const n = Number(data.totalUnrealizedPL);
+            const cls = n > 0 ? "up" : n < 0 ? "down" : "flat";
+            let text = formatSignedMoney(n);
+            if (data.totalUnrealizedPLPercent != null)
+                text += " · " + formatSignedPercent(data.totalUnrealizedPLPercent);
+            plEl.textContent = text;
+            plEl.className = "hero-delta " + cls;
+
+            tilePl.textContent = formatSignedMoney(n);
+            tilePl.className = "tile-value " + cls;
+            tilePlPct.innerHTML = data.totalUnrealizedPLPercent != null
+                ? '<span class="pill ' + cls + '">' + formatSignedPercent(data.totalUnrealizedPLPercent) + '</span>'
+                : "";
+        }
+
+        // Позиции: цвета закрепляем за тикером по убыванию стоимости (сортировка таблицы их не меняет)
+        summaryPositions = [...data.positions];
+        const byValue = [...summaryPositions]
+            .filter(p => p.priceAvailable)
+            .sort((a, b) => Number(b.value) - Number(a.value));
+        colorByTicker = {};
+        byValue.forEach((p, i) => {
+            colorByTicker[p.ticker] = i < 6 ? COLORS[i] : OTHER_COLOR;
+        });
+
+        renderBestWorst(byValue);
+        renderChart(byValue);
+        renderTable();
+    }
+
+    function renderBestWorst(byValue) {
+        const withPl = byValue.filter(p => p.unrealizedPLPercent != null);
+        const best = withPl.length ? withPl.reduce((a, b) => Number(a.unrealizedPLPercent) >= Number(b.unrealizedPLPercent) ? a : b) : null;
+        const worst = withPl.length ? withPl.reduce((a, b) => Number(a.unrealizedPLPercent) <= Number(b.unrealizedPLPercent) ? a : b) : null;
+        fillMoverTile("tile-best", "tile-best-sub", best);
+        fillMoverTile("tile-worst", "tile-worst-sub", worst);
+    }
+
+    function fillMoverTile(idMain, idSub, p) {
+        const main = document.getElementById(idMain);
+        const sub = document.getElementById(idSub);
+        if (!p) { main.textContent = "—"; sub.textContent = ""; return; }
+        main.textContent = p.ticker;
+        const cls = plClass2(p.unrealizedPLPercent);
+        sub.innerHTML = '<span class="pill ' + cls + '">' + formatSignedPercent(p.unrealizedPLPercent) + '</span> ' +
+            '<span style="color:var(--text-3)">' + escapeHtml((p.name || "").trim()) + '</span>';
+    }
+
+    // ===== Донат распределения (топ-6 + «Другие») =====
+    function renderChart(byValue) {
+        const ctx = document.getElementById("pie-chart");
+        if (chart) chart.destroy();
+
+        const top = byValue.slice(0, 6);
+        const rest = byValue.slice(6);
+        const labels = top.map(p => p.ticker);
+        const values = top.map(p => Number(p.value));
+        const colors = top.map(p => colorByTicker[p.ticker]);
+        if (rest.length) {
+            labels.push("Другие");
+            values.push(rest.reduce((s, p) => s + Number(p.value), 0));
+            colors.push(OTHER_COLOR);
+        }
+        const total = values.reduce((s, v) => s + v, 0);
+
+        chart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: CSS.surface,   // 2px зазор цветом поверхности
+                    borderWidth: 2,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "70%",
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        ...tooltipStyle(),
+                        callbacks: {
+                            label: (c) => " " + c.label + ": € " + formatMoney(c.parsed) +
+                                (total ? " (" + (c.parsed / total * 100).toFixed(1) + " %)" : "")
+                        }
+                    }
+                }
+            },
+            plugins: [{
+                id: "centerText",
+                beforeDraw(ch) {
+                    const { ctx, chartArea } = ch;
+                    if (!chartArea) return;
+                    const cx = (chartArea.left + chartArea.right) / 2;
+                    const cy = (chartArea.top + chartArea.bottom) / 2;
+                    ctx.save();
+                    ctx.textAlign = "center";
+                    ctx.fillStyle = CSS.text3;
+                    ctx.font = "600 11px Inter, sans-serif";
+                    ctx.fillText("ВСЕГО", cx, cy - 12);
+                    ctx.fillStyle = "#f2f5f9";
+                    ctx.font = "700 17px Inter, sans-serif";
+                    ctx.fillText("€ " + formatCompact(total), cx, cy + 8);
+                    ctx.restore();
+                }
+            }]
+        });
+
+        // HTML-легенда с процентами
+        const legendEl = document.getElementById("donut-legend");
+        legendEl.innerHTML = labels.map((l, i) =>
+            '<div class="donut-legend-item">' +
+                '<span class="swatch" style="background:' + colors[i] + '"></span>' +
+                '<span class="lt">' + escapeHtml(l) + '</span>' +
+                '<span class="lp">' + (total ? (values[i] / total * 100).toFixed(1) : "0.0") + ' %</span>' +
+            '</div>'
+        ).join("");
+    }
+
+    // ===== Таблица позиций: сортировка + поиск =====
+    const SORT_COLS = [
+        { key: "ticker",              label: "Бумага",    num: false },
+        { key: "quantity",            label: "Кол-во",    num: true },
+        { key: "price",               label: "Цена",      num: true },
+        { key: "averagePrice",        label: "Средняя",   num: true },
+        { key: "value",               label: "Стоимость", num: true },
+        { key: "unrealizedPL",        label: "P/L",       num: true },
+        { key: "unrealizedPLPercent", label: "P/L %",     num: true },
+        { key: "allocation",          label: "Доля",      num: true }
+    ];
+    let sortState = { key: "value", dir: -1 };
+
+    function setSort(key) {
+        if (sortState.key === key) {
+            sortState.dir = -sortState.dir;
+        } else {
+            sortState = { key, dir: key === "ticker" ? 1 : -1 };
+        }
+        renderTable();
+    }
+
+    function renderTable() {
+        const el = document.getElementById("positions-table");
+        if (!summaryPositions.length) {
+            el.innerHTML = '<div class="empty-state"><div class="big">📈</div>' +
+                'Позиций пока нет<div class="hint">Добавьте первую сделку в форме ниже</div></div>';
             return;
         }
 
-        let html = '<table><thead><tr>' +
-            '<th>Тикер</th>' +
-            '<th>Название</th>' +
-            '<th class="num">Кол-во</th>' +
-            '<th class="num"></th>' +
-            '</tr></thead><tbody>';
+        const q = document.getElementById("search-input").value.trim().toLowerCase();
+        let rows = summaryPositions.filter(p =>
+            !q || p.ticker.toLowerCase().includes(q) || (p.name || "").toLowerCase().includes(q));
 
-        for (const p of positions) {
+        const { key, dir } = sortState;
+        rows.sort((a, b) => {
+            // бумаги без цены — всегда в конец
+            if (a.priceAvailable !== b.priceAvailable) return a.priceAvailable ? -1 : 1;
+            if (key === "ticker") return dir * a.ticker.localeCompare(b.ticker);
+            const va = a[key] == null ? -Infinity : Number(a[key]);
+            const vb = b[key] == null ? -Infinity : Number(b[key]);
+            return dir * (va - vb);
+        });
+
+        let html = '<table><thead><tr>';
+        for (const c of SORT_COLS) {
+            const sorted = sortState.key === c.key;
+            html += '<th class="sortable' + (c.num ? ' num' : '') + (sorted ? ' sorted' : '') + '" ' +
+                'onclick="setSort(\'' + c.key + '\')" title="Сортировать">' + c.label +
+                '<span class="arr">' + (sorted ? (sortState.dir === 1 ? '▲' : '▼') : '') + '</span></th>';
+        }
+        html += '<th class="num"></th></tr></thead><tbody>';
+
+        for (const p of rows) {
+            const delBtn = positionIds[p.ticker]
+                ? '<button class="row-del" title="Удалить позицию" onclick="deletePosition(this, \'' + positionIds[p.ticker] + '\', \'' +
+                    escapeHtml(p.ticker).replace(/'/g, "\\'") + '\')">✕</button>'
+                : '';
+            const dot = colorByTicker[p.ticker]
+                ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' +
+                    colorByTicker[p.ticker] + ';margin-right:8px;vertical-align:1px"></span>'
+                : '';
+
+            if (!p.priceAvailable) {
+                html += '<tr class="unavailable">' +
+                    '<td>' + dot + '<span class="ticker">' + escapeHtml(p.ticker) + '</span>' +
+                    '<div class="name-dim">' + escapeHtml((p.name || "").trim()) + '</div></td>' +
+                    '<td class="num">' + formatNum(p.quantity) + '</td>' +
+                    '<td class="num" colspan="6"><span class="badge-na">цена недоступна</span></td>' +
+                    '<td class="num">' + delBtn + '</td></tr>';
+                continue;
+            }
+
+            const alloc = Number(p.allocation);
             html += '<tr>' +
-                '<td class="ticker">' + escapeHtml(p.ticker) + '</td>' +
-                '<td class="name-dim">' + escapeHtml(p.name) + '</td>' +
+                '<td>' + dot + '<span class="ticker">' + escapeHtml(p.ticker) + '</span>' +
+                '<div class="name-dim">' + escapeHtml((p.name || "").trim()) + '</div></td>' +
                 '<td class="num">' + formatNum(p.quantity) + '</td>' +
-                '<td class="num"><button class="delete-btn" onclick="deletePosition(\'' + p.id + '\', \'' +
-                    escapeHtml(p.ticker).replace(/'/g, "\\'") + '\')">Удалить</button></td>' +
-                '</tr>';
+                '<td class="num">€ ' + formatMoney(p.price) + '</td>' +
+                '<td class="num">' + (p.averagePrice != null ? '€ ' + formatMoney(p.averagePrice) : '—') + '</td>' +
+                '<td class="num">€ ' + formatMoney(p.value) + '</td>' +
+                (p.unrealizedPL != null
+                    ? '<td class="num ' + plClass(p.unrealizedPL) + '">' + formatSignedMoney(p.unrealizedPL) + '</td>'
+                    : '<td class="num">—</td>') +
+                (p.unrealizedPLPercent != null
+                    ? '<td class="num ' + plClass(p.unrealizedPLPercent) + '">' + formatSignedPercent(p.unrealizedPLPercent) + '</td>'
+                    : '<td class="num">—</td>') +
+                '<td class="num"><div class="alloc-cell">' +
+                    '<div class="alloc-track"><div class="alloc-fill" style="width:' + Math.min(100, Math.max(2, alloc)) + '%"></div></div>' +
+                    '<span>' + alloc.toFixed(1) + ' %</span></div></td>' +
+                '<td class="num">' + delBtn + '</td></tr>';
         }
 
         html += '</tbody></table>';
+        if (!rows.length)
+            html = '<div class="empty-state">Ничего не найдено по запросу «' + escapeHtml(q) + '»</div>';
         el.innerHTML = html;
     }
 
-    function showManageMsg(text, isError) {
-        const el = document.getElementById("manage-msg");
-        el.textContent = text;
-        el.className = "form-msg " + (isError ? "err" : "ok");
+    // ===== Экспорт CSV =====
+    function exportCsv() {
+        if (!summaryPositions.length) { toast("Нет данных для экспорта", "err"); return; }
+        const head = ["Тикер", "Название", "Кол-во", "Цена", "Средняя", "Стоимость", "P/L", "P/L %", "Доля %"];
+        const lines = [head.join(";")];
+        for (const p of summaryPositions) {
+            lines.push([
+                p.ticker, '"' + (p.name || "").trim().replace(/"/g, '""') + '"',
+                p.quantity, p.price ?? "", p.averagePrice ?? "", p.value ?? "",
+                p.unrealizedPL ?? "", p.unrealizedPLPercent ?? "", p.allocation ?? ""
+            ].join(";"));
+        }
+        const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "portfolio_" + new Date().toISOString().slice(0, 10) + ".csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast("CSV выгружен", "ok");
+    }
+
+    // ===== Удаление позиции (двойное подтверждение без confirm) =====
+    async function deletePosition(btn, id, ticker) {
+        if (!btn.classList.contains("armed")) {
+            btn.classList.add("armed");
+            btn.textContent = "Точно?";
+            setTimeout(() => {
+                if (btn.isConnected) { btn.classList.remove("armed"); btn.textContent = "✕"; }
+            }, 3000);
+            return;
+        }
+        try {
+            const resp = await api("/positions/" + id, { method: "DELETE" });
+            if (!resp.ok && resp.status !== 204) {
+                toast("Не удалось удалить (" + resp.status + ")", "err");
+                return;
+            }
+            toast(ticker + " удалена", "ok");
+            await refreshAll();
+        } catch (e) {
+            if (e.message !== "unauthorized") toast("portfolio-service недоступен", "err");
+        }
+    }
+
+    // ===== Сделки =====
+    function setTradeType(type) {
+        tradeType = type;
+        document.getElementById("seg-buy").className = type === "BUY" ? "active-buy" : "";
+        document.getElementById("seg-sell").className = type === "SELL" ? "active-sell" : "";
+        updateTradeTotal();
+    }
+
+    function updateTradeTotal() {
+        const q = Number(document.getElementById("new-quantity").value);
+        const pr = Number(document.getElementById("new-price").value);
+        const el = document.getElementById("trade-total");
+        if (q > 0 && pr > 0) {
+            el.innerHTML = "Сумма сделки: <b>€ " + formatMoney(q * pr) + "</b>" +
+                (tradeType === "SELL" ? " (продажа)" : "");
+        } else {
+            el.textContent = "";
+        }
     }
 
     async function addTrade() {
         const ticker = document.getElementById("new-ticker").value.trim().toUpperCase();
         const quantity = document.getElementById("new-quantity").value;
         const price = document.getElementById("new-price").value;
-        const type = document.getElementById("new-type").value;
         const tradeDate = document.getElementById("new-date").value; // пусто → бэкенд ставит сегодня
         const btn = document.getElementById("add-btn");
 
         if (!ticker || !quantity || Number(quantity) <= 0) {
-            showManageMsg("Заполните тикер и количество (больше нуля)", true);
+            toast("Заполните тикер и количество (больше нуля)", "err");
             return;
         }
         if (!price || Number(price) <= 0) {
-            showManageMsg("Укажите цену сделки (больше нуля)", true);
+            toast("Укажите цену сделки (больше нуля)", "err");
             return;
         }
 
         btn.disabled = true;
-        btn.textContent = "Добавление...";
+        btn.textContent = "Добавление…";
         try {
-            const body = { ticker, quantity, price, type };
+            const body = { ticker, quantity, price, type: tradeType };
             if (tradeDate) body.tradeDate = tradeDate;
 
-            const resp = await fetch(PORTFOLIO_URL + "/trade/trades", {
+            const resp = await api("/trade/trades", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
             });
 
@@ -594,99 +1174,67 @@
                     const err = await resp.json();
                     if (err && err.message) msg = err.message;
                 } catch (_) { /* тело не JSON — оставляем дефолт */ }
-                showManageMsg(msg, true);
+                toast(msg, "err");
                 return;
             }
 
-            const typeLabel = type === "SELL" ? "Продажа" : "Покупка";
-            showManageMsg(typeLabel + " " + ticker + " добавлена", false);
+            toast((tradeType === "SELL" ? "Продажа " : "Покупка ") + ticker + " добавлена", "ok");
             document.getElementById("new-ticker").value = "";
             document.getElementById("new-quantity").value = "";
             document.getElementById("new-price").value = "";
-            await loadPortfolio(); // пересчитает позицию (кол-во + средняя) и P/L
+            updateTradeTotal();
+            await refreshAll(); // пересчитает позицию (кол-во + средняя) и P/L
         } catch (e) {
-            showManageMsg("portfolio-service недоступен", true);
+            if (e.message !== "unauthorized") toast("portfolio-service недоступен", "err");
         } finally {
             btn.disabled = false;
-            btn.textContent = "Добавить сделку";
+            btn.textContent = "Добавить";
         }
     }
 
-    async function deletePosition(id, ticker) {
-        if (!confirm("Удалить позицию " + ticker + "?")) return;
-
-        try {
-            const resp = await fetch(PORTFOLIO_URL + "/positions/" + id, {
-                method: "DELETE",
-                headers: { "Authorization": "Bearer " + token }
-            });
-
-            if (!resp.ok && resp.status !== 204) {
-                showManageMsg("Не удалось удалить (" + resp.status + ")", true);
-                return;
-            }
-
-            showManageMsg(ticker + " удалена", false);
-            await loadPortfolio();
-        } catch (e) {
-            showManageMsg("portfolio-service недоступен", true);
-        }
-    }
-
-    // ===== Ручное сохранение снимка =====
+    // ===== Снимок =====
     async function saveSnapshot() {
         const btn = document.getElementById("snapshot-btn");
         btn.disabled = true;
-        btn.textContent = "Сохранение...";
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/snapshot", {
-                method: "POST",
-                headers: { "Authorization": "Bearer " + token }
-            });
-
+            const resp = await api("/portfolio/snapshot", { method: "POST" });
             if (!resp.ok && resp.status !== 201) {
-                btn.textContent = "Ошибка (" + resp.status + ")";
-                setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+                toast("Ошибка сохранения снимка (" + resp.status + ")", "err");
                 return;
             }
-
-            btn.textContent = "Снимок сохранён ✓";
-            await loadHistory();   // обновляем график во времени
-            setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+            toast("Снимок сохранён", "ok");
+            await Promise.allSettled([loadHistory(), loadSparkline(), loadTotalChange()]);
         } catch (e) {
-            btn.textContent = "Сервис недоступен";
-            setTimeout(() => { btn.textContent = "Сохранить снимок"; btn.disabled = false; }, 2000);
+            if (e.message !== "unauthorized") toast("Сервис недоступен", "err");
+        } finally {
+            btn.disabled = false;
         }
     }
 
-    // ===== Переключатель периодов =====
+    // ===== История (линия) =====
     function selectPeriod(period) {
         currentPeriod = period;
-        // подсветка активной кнопки
-        document.querySelectorAll(".period-btn").forEach(btn => {
+        document.querySelectorAll("[data-period]").forEach(btn => {
             btn.classList.toggle("active", btn.dataset.period === period);
         });
         loadHistory();
     }
 
-    // ===== Загрузка истории (график во времени) =====
     async function loadHistory() {
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/history?period=" + currentPeriod, {
-                headers: { "Authorization": "Bearer " + token }
-            });
+            const resp = await api("/portfolio/history?period=" + currentPeriod);
             if (!resp.ok) return;
-
-            const history = await resp.json();
-            renderHistory(history);
-        } catch (e) {
-            // история не критична — если не загрузилась, просто нет графика
-        }
+            renderHistory(await resp.json());
+        } catch (e) { /* история не критична */ }
     }
 
     function renderHistory(history) {
         const ctx = document.getElementById("history-chart");
         if (historyChart) historyChart.destroy();
+
+        const grad = ctx.getContext("2d").createLinearGradient(0, 0, 0, 330);
+        grad.addColorStop(0, "rgba(57, 135, 229, 0.22)");
+        grad.addColorStop(1, "rgba(57, 135, 229, 0)");
 
         historyChart = new Chart(ctx, {
             type: "line",
@@ -695,37 +1243,42 @@
                 datasets: [{
                     label: "Стоимость портфеля",
                     data: history.map(h => Number(h.totalValue)),
-                    borderColor: "#2f81f7",
-                    backgroundColor: "rgba(47, 129, 247, 0.1)",
+                    borderColor: CSS.accent,
+                    backgroundColor: grad,
                     fill: true,
                     tension: 0.3,
-                    pointRadius: 4,
-                    pointBackgroundColor: "#2f81f7",
-                    borderWidth: 2
+                    borderWidth: 2,
+                    pointRadius: history.length > 30 ? 0 : 3,
+                    pointBackgroundColor: CSS.accent,
+                    pointBorderColor: CSS.surface,
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 5,
+                    pointHitRadius: 12
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: "index", intersect: false },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        callbacks: {
-                            label: (c) => " € " + formatMoney(c.parsed.y)
-                        }
+                        ...tooltipStyle(),
+                        callbacks: { label: (c) => " € " + formatMoney(c.parsed.y) }
                     }
                 },
                 scales: {
                     x: {
-                        grid: { color: "#21262d" },
-                        ticks: { color: "#8b949e", font: { size: 11 } }
+                        grid: { display: false },
+                        border: { color: CSS.grid },
+                        ticks: { color: CSS.text3, font: { size: 11 }, maxTicksLimit: 8, maxRotation: 0 }
                     },
                     y: {
-                        grid: { color: "#21262d" },
+                        grid: { color: CSS.grid, lineWidth: 1 },
+                        border: { display: false },
                         ticks: {
-                            color: "#8b949e",
-                            font: { size: 11 },
-                            callback: (v) => "€ " + v.toLocaleString("de-DE")
+                            color: CSS.text3, font: { size: 11 },
+                            callback: (v) => "€ " + formatCompact(v)
                         }
                     }
                 }
@@ -733,7 +1286,51 @@
         });
     }
 
-    // ===== Динамика бумаг за период (бар-чарт) =====
+    // ===== Спарклайн в плитке-герое =====
+    async function loadSparkline() {
+        try {
+            const resp = await api("/portfolio/history?period=all");
+            if (!resp.ok) return;
+            drawSparkline(await resp.json());
+        } catch (e) { /* не критично */ }
+    }
+
+    function drawSparkline(history) {
+        const canvas = document.getElementById("sparkline");
+        const values = history.map(h => Number(h.totalValue));
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.clientWidth || 150, h = canvas.clientHeight || 64;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+        ctx.clearRect(0, 0, w, h);
+        if (values.length < 2) return;
+
+        const min = Math.min(...values), max = Math.max(...values);
+        const span = max - min || 1;
+        const px = i => 2 + i * (w - 4) / (values.length - 1);
+        const py = v => h - 3 - (v - min) / span * (h - 8);
+
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, "rgba(57, 135, 229, 0.25)");
+        grad.addColorStop(1, "rgba(57, 135, 229, 0)");
+
+        ctx.beginPath();
+        values.forEach((v, i) => i ? ctx.lineTo(px(i), py(v)) : ctx.moveTo(px(i), py(v)));
+        ctx.strokeStyle = CSS.accent;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+        ctx.stroke();
+        ctx.lineTo(px(values.length - 1), h);
+        ctx.lineTo(px(0), h);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+    }
+
+    // ===== Динамика бумаг (бар-чарт) =====
     function selectPerfPeriod(period) {
         perfPeriod = period;
         document.querySelectorAll(".perf-btn").forEach(btn => {
@@ -744,16 +1341,10 @@
 
     async function loadPerformance() {
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/performance?period=" + perfPeriod, {
-                headers: { "Authorization": "Bearer " + token }
-            });
+            const resp = await api("/portfolio/performance?period=" + perfPeriod);
             if (!resp.ok) return;
-
-            const items = await resp.json();
-            renderPerformance(items);
-        } catch (e) {
-            // динамика не критична
-        }
+            renderPerformance(await resp.json());
+        } catch (e) { /* динамика не критична */ }
     }
 
     function renderPerformance(items) {
@@ -764,19 +1355,17 @@
             .filter(i => i.available && i.changePercent !== null)
             .sort((a, b) => Number(b.changePercent) - Number(a.changePercent));
 
-        const labels = valid.map(i => i.ticker);
-        const values = valid.map(i => Number(i.changePercent));
-        const colors = values.map(v => v >= 0 ? "#3fb950" : "#f85149");
-
         performanceChart = new Chart(ctx, {
             type: "bar",
             data: {
-                labels: labels,
+                labels: valid.map(i => i.ticker),
                 datasets: [{
                     label: "Изменение, %",
-                    data: values,
-                    backgroundColor: colors,
-                    borderRadius: 4
+                    data: valid.map(i => Number(i.changePercent)),
+                    backgroundColor: valid.map(i => Number(i.changePercent) >= 0 ? CSS.up : CSS.down),
+                    borderRadius: 4,
+                    borderSkipped: "start",   // скругление на конце данных, у базовой линии — прямое
+                    maxBarThickness: 24
                 }]
             },
             options: {
@@ -785,23 +1374,22 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        ...tooltipStyle(),
                         callbacks: {
-                            label: (c) => (c.parsed.y >= 0 ? "+" : "") + c.parsed.y + " %"
+                            label: (c) => " " + (c.parsed.y >= 0 ? "+" : "") + c.parsed.y.toFixed(2) + " %"
                         }
                     }
                 },
                 scales: {
                     x: {
-                        grid: { color: "#21262d" },
-                        ticks: { color: "#8b949e", font: { size: 11 } }
+                        grid: { display: false },
+                        border: { color: CSS.grid },
+                        ticks: { color: CSS.text3, font: { size: 11 } }
                     },
                     y: {
-                        grid: { color: "#21262d" },
-                        ticks: {
-                            color: "#8b949e",
-                            font: { size: 11 },
-                            callback: (v) => v + " %"
-                        }
+                        grid: { color: CSS.grid, lineWidth: 1 },
+                        border: { display: false },
+                        ticks: { color: CSS.text3, font: { size: 11 }, callback: (v) => v + " %" }
                     }
                 }
             }
@@ -812,154 +1400,47 @@
     async function loadTotalChange() {
         const el = document.getElementById("total-change");
         try {
-            const resp = await fetch(PORTFOLIO_URL + "/portfolio/getPercent?period=all", {
-                headers: { "Authorization": "Bearer " + token }
-            });
+            const resp = await api("/portfolio/getPercent?period=all");
             if (!resp.ok) { el.textContent = ""; return; }
 
             // бэкенд возвращает число или null (если снимков < 2)
             const text = await resp.text();
             if (!text || text === "null") {
-                el.textContent = "Недостаточно снимков для расчёта";
-                el.className = "total-change flat";
+                el.textContent = "Недостаточно снимков для расчёта динамики";
                 return;
             }
-
             const pct = Number(text);
-            const sign = pct > 0 ? "+" : "";              // минус и так есть у отрицательных
-            el.textContent = sign + pct.toFixed(2) + " % за всё время";
-            el.className = "total-change " + (pct > 0 ? "up" : pct < 0 ? "down" : "flat");
+            const sign = pct > 0 ? "+" : "";
+            el.textContent = sign + pct.toFixed(2) + " % за всё время (по снимкам)";
         } catch (e) {
             el.textContent = "";
         }
     }
 
-    // ===== Отрисовка =====
-    function render(data) {
-        // Общая стоимость
-        document.getElementById("total-value").textContent =
-            "€ " + formatMoney(data.totalValue);
-
-        // Общий P/L портфеля
-        const plEl = document.getElementById("total-pl");
-        if (data.totalUnrealizedPL == null) {
-            plEl.textContent = "";
-            plEl.className = "total-pl";
-        } else {
-            const n = Number(data.totalUnrealizedPL);
-            let text = "Прибыль/убыток: " + formatSignedMoney(data.totalUnrealizedPL);
-            if (data.totalUnrealizedPLPercent != null) {
-                text += " (" + formatSignedPercent(data.totalUnrealizedPLPercent) + ")";
-            }
-            plEl.textContent = text;
-            plEl.className = "total-pl " + (n > 0 ? "up" : n < 0 ? "down" : "flat");
+    // ===== Анимация числа =====
+    function animateNumber(el, target) {
+        if (isNaN(target)) { el.textContent = "—"; return; }
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reduced) { el.textContent = "€ " + formatMoney(target); return; }
+        const dur = 600, start = performance.now();
+        function tick(now) {
+            const t = Math.min(1, (now - start) / dur);
+            const eased = 1 - Math.pow(1 - t, 3);
+            el.textContent = "€ " + formatMoney(target * eased);
+            if (t < 1) requestAnimationFrame(tick);
         }
-
-        // Сортируем по стоимости (убывание); битые (value null) — в конец
-        const positions = [...data.positions].sort((a, b) => {
-            const va = a.priceAvailable ? Number(a.value) : -1;
-            const vb = b.priceAvailable ? Number(b.value) : -1;
-            return vb - va;
-        });
-
-        renderChart(positions);
-        renderTable(positions);
-    }
-
-    function renderChart(positions) {
-        const ctx = document.getElementById("pie-chart");
-        if (chart) chart.destroy();
-
-        // В диаграмму — только бумаги с доступной ценой
-        const valid = positions.filter(p => p.priceAvailable);
-
-        chart = new Chart(ctx, {
-            type: "doughnut",
-            data: {
-                labels: valid.map(p => p.ticker),
-                datasets: [{
-                    data: valid.map(p => Number(p.value)),
-                    backgroundColor: COLORS,
-                    borderColor: "#0d1117",
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: { color: "#8b949e", padding: 12, font: { size: 11 } }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (c) => " " + c.label + ": € " + formatMoney(c.parsed)
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function renderTable(positions) {
-        let html = '<table><thead><tr>' +
-            '<th>Бумага</th>' +
-            '<th class="num">Кол-во</th>' +
-            '<th class="num">Цена</th>' +
-            '<th class="num">Средняя</th>' +
-            '<th class="num">Стоимость</th>' +
-            '<th class="num">P/L</th>' +
-            '<th class="num">P/L %</th>' +
-            '<th class="num">Доля</th>' +
-            '</tr></thead><tbody>';
-
-        for (const p of positions) {
-            if (!p.priceAvailable) {
-                // битая бумага — серым, с пометкой вместо цифр
-                html += '<tr class="unavailable">' +
-                    '<td><div class="ticker">' + p.ticker + '</div>' +
-                    '<div class="name-dim">' + escapeHtml(p.name.trim()) + '</div></td>' +
-                    '<td class="num">' + formatNum(p.quantity) + '</td>' +
-                    '<td class="num" colspan="6"><span class="badge-na">цена недоступна</span></td>' +
-                    '</tr>';
-                continue;
-            }
-            const alloc = Number(p.allocation);
-            const avgCell = p.averagePrice != null
-                ? '<td class="num">€ ' + formatMoney(p.averagePrice) + '</td>'
-                : '<td class="num">—</td>';
-            const plCell = p.unrealizedPL != null
-                ? '<td class="num ' + plClass(p.unrealizedPL) + '">' + formatSignedMoney(p.unrealizedPL) + '</td>'
-                : '<td class="num">—</td>';
-            const plPctCell = p.unrealizedPLPercent != null
-                ? '<td class="num ' + plClass(p.unrealizedPLPercent) + '">' + formatSignedPercent(p.unrealizedPLPercent) + '</td>'
-                : '<td class="num">—</td>';
-            html += '<tr>' +
-                '<td><div class="ticker">' + p.ticker + '</div>' +
-                '<div class="name-dim">' + escapeHtml(p.name.trim()) + '</div></td>' +
-                '<td class="num">' + formatNum(p.quantity) + '</td>' +
-                '<td class="num">€ ' + formatMoney(p.price) + '</td>' +
-                avgCell +
-                '<td class="num">€ ' + formatMoney(p.value) + '</td>' +
-                plCell +
-                plPctCell +
-                '<td class="num">' +
-                    '<span class="alloc-bar" style="width:' + Math.max(2, alloc) + 'px"></span>' +
-                    alloc.toFixed(1) + '%</td>' +
-                '</tr>';
-        }
-
-        html += '</tbody></table>';
-        document.getElementById("positions-table").innerHTML = html;
+        requestAnimationFrame(tick);
     }
 
     // ===== Утилиты форматирования =====
     function formatMoney(v) {
-        return Number(v).toLocaleString("de-DE", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
+        return Number(v).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function formatCompact(v) {
+        const n = Number(v);
+        if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " млн";
+        if (Math.abs(n) >= 10_000) return (n / 1_000).toLocaleString("de-DE", { maximumFractionDigits: 1 }) + " тыс";
+        return formatMoney(n);
     }
     function formatNum(v) {
         return Number(v).toLocaleString("de-DE", { maximumFractionDigits: 4 });
@@ -980,9 +1461,13 @@
         const n = Number(v);
         return n > 0 ? "pl-up" : n < 0 ? "pl-down" : "";
     }
+    function plClass2(v) {
+        const n = Number(v);
+        return n > 0 ? "up" : n < 0 ? "down" : "flat";
+    }
     function escapeHtml(s) {
         const div = document.createElement("div");
-        div.textContent = s;
+        div.textContent = s ?? "";
         return div.innerHTML;
     }
 
@@ -997,6 +1482,14 @@
             if (e.key === "Enter") addTrade();
         });
     }
+
+    // "/" — фокус на поиск по позициям
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "/" && token && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+            e.preventDefault();
+            document.getElementById("search-input").focus();
+        }
+    });
 
     // Дата сделки по умолчанию — сегодня (в локальной таймзоне)
     (function setDefaultTradeDate() {
