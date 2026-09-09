@@ -164,7 +164,7 @@
             margin-bottom: 6px;
             letter-spacing: 0.2px;
         }
-        .field input, .field select {
+        .field input, .field select, .field textarea {
             width: 100%;
             padding: 11px 13px;
             background: var(--bg);
@@ -176,10 +176,11 @@
             outline: none;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
-        .field input:focus, .field select:focus {
+        .field input:focus, .field select:focus, .field textarea:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-soft);
         }
+        .field textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
 
         .error {
             color: var(--down);
@@ -423,6 +424,102 @@
         @media (max-width: 560px) { .trade-form { grid-template-columns: 1fr; } }
         .trade-form .field { margin-bottom: 0; }
 
+        /* Журнал: зачем сделана сделка */
+        .trade-journal {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2.4fr;
+            gap: 12px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+        @media (max-width: 900px) { .trade-journal { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 560px) { .trade-journal { grid-template-columns: 1fr; } }
+        .trade-journal .field { margin-bottom: 0; }
+        .journal-hint { font-size: 12px; color: var(--text-3); margin-top: 10px; }
+
+        /* Профиль инвестора */
+        .behavior-empty { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+        .behavior-summary {
+            font-size: 15px;
+            line-height: 1.65;
+            color: var(--text);
+            padding: 14px 16px;
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            border-left: 3px solid var(--accent);
+        }
+        .behavior-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .behavior-stat {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+        }
+        .behavior-stat .label { font-size: 11px; color: var(--text-3); letter-spacing: 0.2px; }
+        .behavior-stat .value { font-size: 19px; font-weight: 700; margin-top: 4px; }
+        .behavior-block { margin-top: 22px; }
+        .behavior-block > h3 {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 10px;
+        }
+        .pattern {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+        .pattern-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+        .pattern-head h4 { font-size: 15px; font-weight: 700; }
+        .badge {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+        .badge.high { background: var(--down-soft); color: var(--down); }
+        .badge.medium { background: rgba(224, 168, 93, 0.14); color: #e0a85d; }
+        .badge.low { background: var(--up-soft); color: var(--up); }
+        .pattern p { font-size: 13.5px; line-height: 1.6; color: var(--text-2); }
+        .pattern .evidence {
+            font-size: 12.5px;
+            color: var(--text-3);
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed var(--border);
+        }
+        .behavior-list { list-style: none; }
+        .behavior-list li {
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: var(--text-2);
+            padding: 7px 0 7px 20px;
+            position: relative;
+        }
+        .behavior-list li::before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 15px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        .behavior-meta { font-size: 11.5px; color: var(--text-3); margin-top: 20px; }
+
         .seg {
             display: flex;
             background: var(--bg);
@@ -614,7 +711,52 @@
                 </div>
                 <button class="btn-primary" id="add-btn" onclick="addTrade()">Добавить</button>
             </div>
+
+            <div class="trade-journal">
+                <div class="field">
+                    <label for="new-emotion">Состояние</label>
+                    <select id="new-emotion">
+                        <option value="">Не указывать</option>
+                        <option value="NEUTRAL">Спокойно, по плану</option>
+                        <option value="CONFIDENT">Уверен в идее</option>
+                        <option value="FOMO">Боюсь упустить рост</option>
+                        <option value="FEAR">Страх, паника</option>
+                        <option value="UNCERTAIN">Сомневаюсь</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="new-conviction">Уверенность</label>
+                    <select id="new-conviction">
+                        <option value="">Не указывать</option>
+                        <option value="1">1 — почти наугад</option>
+                        <option value="2">2 — слабая</option>
+                        <option value="3">3 — средняя</option>
+                        <option value="4">4 — высокая</option>
+                        <option value="5">5 — полная</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="new-rationale">Почему эта сделка</label>
+                    <textarea id="new-rationale" maxlength="2000"
+                              placeholder="Отчёт лучше ожиданий, беру на просадке после отсечки"></textarea>
+                </div>
+            </div>
+            <div class="journal-hint">
+                Эти поля необязательны, но именно на них строится профиль инвестора: без них видно только
+                цифры, а с ними — расхождение между тем, что ты думал, и тем, что получилось.
+            </div>
             <div class="trade-total" id="trade-total"></div>
+        </div>
+
+        <!-- Профиль инвестора -->
+        <div class="card section" id="behavior-card">
+            <div class="card-head">
+                <h2>Профиль инвестора</h2>
+                <button class="btn-ghost" id="behavior-btn" onclick="analyzeBehavior()">Проанализировать</button>
+            </div>
+            <div id="behavior-body">
+                <p class="behavior-empty">Профиль ещё не построен.</p>
+            </div>
         </div>
 
         <!-- Графики -->
@@ -655,6 +797,7 @@
     // ===== Конфигурация =====
     const AUTH_URL = "http://localhost:8081";
     const PORTFOLIO_URL = "http://localhost:8084";
+    const AI_URL = "http://localhost:8085";
 
     // Токен живёт в переменной (как договорились) — при перезагрузке надо логиниться заново
     let token = null;
@@ -726,6 +869,23 @@
         return resp;
     }
 
+    // ai-service живёт отдельно, но токен тот же — JWT_SECRET общий на всю платформу
+    async function aiApi(path, options = {}) {
+        const resp = await fetch(AI_URL + path, {
+            ...options,
+            headers: {
+                ...(options.headers || {}),
+                "Authorization": "Bearer " + token
+            }
+        });
+        if (resp.status === 401 && token) {
+            logout();
+            toast("Сессия истекла — войдите заново", "err");
+            throw new Error("unauthorized");
+        }
+        return resp;
+    }
+
     // ===== Логин =====
     async function login() {
         const email = document.getElementById("email").value.trim();
@@ -775,6 +935,9 @@
 
     function logout() {
         token = null;
+        if (behaviorPollTimer) { clearInterval(behaviorPollTimer); behaviorPollTimer = null; }
+        document.getElementById("behavior-body").innerHTML =
+            '<p class="behavior-empty">Профиль ещё не построен.</p>';
         for (const c of [chart, historyChart, performanceChart]) if (c) c.destroy();
         chart = historyChart = performanceChart = null;
         summaryPositions = [];
@@ -800,7 +963,8 @@
                 loadPerformance(),
                 loadTotalChange(),
                 loadSparkline(),
-                loadPositionIds()
+                loadPositionIds(),
+                loadBehaviorProfile()
             ]);
             const t = new Date();
             document.getElementById("updated-at").textContent =
@@ -1158,8 +1322,15 @@
         btn.disabled = true;
         btn.textContent = "Добавление…";
         try {
+            const emotion = document.getElementById("new-emotion").value;
+            const conviction = document.getElementById("new-conviction").value;
+            const rationale = document.getElementById("new-rationale").value.trim();
+
             const body = { ticker, quantity, price, type: tradeType };
             if (tradeDate) body.tradeDate = tradeDate;
+            if (emotion) body.emotion = emotion;
+            if (conviction) body.conviction = Number(conviction);
+            if (rationale) body.rationale = rationale;
 
             const resp = await api("/trade/trades", {
                 method: "POST",
@@ -1182,6 +1353,9 @@
             document.getElementById("new-ticker").value = "";
             document.getElementById("new-quantity").value = "";
             document.getElementById("new-price").value = "";
+            document.getElementById("new-rationale").value = "";
+            document.getElementById("new-emotion").value = "";
+            document.getElementById("new-conviction").value = "";
             updateTradeTotal();
             await refreshAll(); // пересчитает позицию (кол-во + средняя) и P/L
         } catch (e) {
@@ -1190,6 +1364,146 @@
             btn.disabled = false;
             btn.textContent = "Добавить";
         }
+    }
+
+    // ===== Профиль инвестора =====
+    let behaviorPollTimer = null;
+
+    async function analyzeBehavior() {
+        const btn = document.getElementById("behavior-btn");
+        btn.disabled = true;
+        btn.textContent = "Запуск…";
+        try {
+            const resp = await aiApi("/ai/behavior/analyze", { method: "POST" });
+
+            if (!resp.ok && resp.status !== 202) {
+                let msg = "Не удалось запустить анализ (" + resp.status + ")";
+                try {
+                    const err = await resp.json();
+                    if (err && err.message) msg = err.message;
+                } catch (_) { /* тело не JSON — оставляем дефолт */ }
+                toast(msg, "err");
+                return;
+            }
+
+            toast("Анализ запущен — займёт около минуты", "ok");
+            renderBehavior(await resp.json());
+            startBehaviorPolling();
+        } catch (e) {
+            if (e.message !== "unauthorized") toast("ai-service недоступен", "err");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Проанализировать";
+        }
+    }
+
+    async function loadBehaviorProfile() {
+        try {
+            const resp = await aiApi("/ai/behavior/profile");
+            if (resp.status === 204) {
+                document.getElementById("behavior-body").innerHTML =
+                    '<p class="behavior-empty">Профиль ещё не построен. Добавь несколько сделок с описанием ' +
+                    'причины и нажми «Проанализировать».</p>';
+                return null;
+            }
+            if (!resp.ok) return null;
+
+            const profile = await resp.json();
+            renderBehavior(profile);
+            return profile;
+        } catch (e) {
+            if (e.message !== "unauthorized") {
+                document.getElementById("behavior-body").innerHTML =
+                    '<p class="behavior-empty">ai-service недоступен.</p>';
+            }
+            return null;
+        }
+    }
+
+    // Генерация идёт в фоне, поэтому опрашиваем статус, пока он не станет финальным
+    function startBehaviorPolling() {
+        if (behaviorPollTimer) clearInterval(behaviorPollTimer);
+        let attempts = 0;
+
+        behaviorPollTimer = setInterval(async () => {
+            attempts++;
+            const profile = await loadBehaviorProfile();
+
+            if (!profile || profile.status !== "PENDING" || attempts > 40) {
+                clearInterval(behaviorPollTimer);
+                behaviorPollTimer = null;
+                if (profile && profile.status === "READY") toast("Профиль готов", "ok");
+                if (profile && profile.status === "FAILED") toast("Анализ не удался", "err");
+            }
+        }, 4000);
+    }
+
+    function renderBehavior(profile) {
+        const body = document.getElementById("behavior-body");
+
+        if (profile.status === "PENDING") {
+            body.innerHTML = '<p class="behavior-empty">Модель разбирает журнал сделок…</p>';
+            return;
+        }
+        if (profile.status === "FAILED") {
+            body.innerHTML = '<p class="behavior-empty">Анализ не удался: ' +
+                escapeHtml(profile.error || "неизвестная ошибка") + '</p>';
+            return;
+        }
+
+        const a = profile.analysis || {};
+        const m = profile.metrics || {};
+        let html = "";
+
+        if (a.summary) html += '<div class="behavior-summary">' + escapeHtml(a.summary) + '</div>';
+
+        html += '<div class="behavior-stats">' +
+            stat("Сделок в журнале", m.totalTrades) +
+            stat("Доля удачных решений", pct(m.hitRate)) +
+            stat("Средний результат через 30 дней", pct(m.avgTimingScore)) +
+            stat("Покупки вдогонку за ростом", pct(m.chaseBuyShare)) +
+            stat("Продажи на просадке", pct(m.panicSellShare)) +
+            '</div>';
+
+        if (a.patterns && a.patterns.length) {
+            html += '<div class="behavior-block"><h3>Паттерны</h3>';
+            for (const p of a.patterns) {
+                const severity = (p.severity || "LOW").toLowerCase();
+                html += '<div class="pattern">' +
+                    '<div class="pattern-head"><h4>' + escapeHtml(p.title || "") + '</h4>' +
+                    '<span class="badge ' + escapeHtml(severity) + '">' + escapeHtml(severity) + '</span></div>' +
+                    '<p>' + escapeHtml(p.description || "") + '</p>' +
+                    (p.evidence ? '<div class="evidence">' + escapeHtml(p.evidence) + '</div>' : '') +
+                    '</div>';
+            }
+            html += '</div>';
+        }
+
+        html += listBlock("Сильные стороны", a.strengths);
+        html += listBlock("Что стоит поменять", a.recommendations);
+
+        html += '<div class="behavior-meta">Проанализировано сделок: ' + (profile.tradesAnalyzed || 0) +
+            (profile.model ? ' · модель ' + escapeHtml(profile.model) : '') +
+            (profile.completedAt ? ' · ' + new Date(profile.completedAt).toLocaleString("ru-RU") : '') +
+            '</div>';
+
+        body.innerHTML = html;
+    }
+
+    function stat(label, value) {
+        return '<div class="behavior-stat"><div class="label">' + label + '</div>' +
+            '<div class="value">' + (value === null || value === undefined ? "—" : value) + '</div></div>';
+    }
+
+    function pct(value) {
+        return (value === null || value === undefined) ? null : value.toFixed(1) + "%";
+    }
+
+    function listBlock(title, items) {
+        if (!items || !items.length) return "";
+        return '<div class="behavior-block"><h3>' + title + '</h3><ul class="behavior-list">' +
+            items.map(i => '<li>' + escapeHtml(i) + '</li>').join("") +
+            '</ul></div>';
     }
 
     // ===== Снимок =====

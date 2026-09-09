@@ -1,0 +1,34 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: ai-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5437/ai_db}
+    username: ${DB_USERNAME:ai}
+    password: ${DB_PASSWORD:ai}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+jwt:
+  secret: ${JWT_SECRET}
+
+anthropic:
+  api-key: ${ANTHROPIC_API_KEY:}
+  model: ${ANTHROPIC_MODEL:claude-opus-5}
+
+ai:
+  # Меньше этого числа сделок — говорить о поведенческих паттернах рано
+  min-trades: ${AI_MIN_TRADES:5}

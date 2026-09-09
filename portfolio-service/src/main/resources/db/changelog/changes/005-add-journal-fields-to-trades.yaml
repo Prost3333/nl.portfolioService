@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-journal-fields-to-trades
+      author: Prost3333
+      changes:
+        - addColumn:
+            tableName: trades
+            columns:
+              - column:
+                  name: rationale
+                  type: VARCHAR(2000)
+              - column:
+                  name: conviction
+                  type: INT
+              - column:
+                  name: emotion
+                  type: VARCHAR(20)

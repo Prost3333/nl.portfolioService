@@ -1,0 +1,57 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-behavior-profiles-table
+      author: Prost3333
+      changes:
+        - createTable:
+            tableName: behavior_profiles
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: trades_analyzed
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: metrics_json
+                  type: TEXT
+              - column:
+                  name: analysis_json
+                  type: TEXT
+              - column:
+                  name: error_message
+                  type: VARCHAR(1000)
+              - column:
+                  name: model_used
+                  type: VARCHAR(50)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: TIMESTAMP
+        - createIndex:
+            indexName: idx_behavior_profiles_user_created
+            tableName: behavior_profiles
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: created_at

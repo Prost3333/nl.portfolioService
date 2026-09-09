@@ -2,6 +2,7 @@ package nlgrandtaskmanager.portfolio_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nlgrandtaskmanager.portfolio_service.enums.TradeEmotion;
 import nlgrandtaskmanager.portfolio_service.enums.TradeType;
 
 import java.math.BigDecimal;
@@ -35,4 +36,14 @@ public class Trade {
     private TradeType type;
     @Column(name = "trade_date", nullable = false)
     private LocalDate tradeDate;
+
+    @Column(name = "rationale", length = 2000)
+    private String rationale;
+
+    @Column(name = "conviction")
+    private Integer conviction;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "emotion", length = 20)
+    private TradeEmotion emotion;
 }

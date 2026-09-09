@@ -3,7 +3,8 @@
 ![CI](https://github.com/Prost3333/nl.portfolioService/actions/workflows/ci.yml/badge.svg)
 
 A microservice platform for tracking an investment portfolio: positions, live
-prices, value snapshots over time, and aggregated cross-user statistics.
+prices, value snapshots over time, aggregated cross-user statistics, and an
+LLM-built behavioural profile of the investor from their own trade journal.
 Built with **Spring Boot 3 / Java 17**, JWT authentication, asynchronous event
 exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 
@@ -22,28 +23,33 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 - [Tests](#tests)
 - [CI](#ci)
 - [Repository Layout](#repository-layout)
+- [Deployment](#deployment)
 
 ---
 
 ## Architecture
 
 ```
-                         ┌──────────────┐
-              register / │ auth-service │  issues JWT
-              login      │   :8081      │
-                         └──────┬───────┘
-                                │ JWT (Bearer)
-                ┌───────────────┴────────────────┐
-                │                                 │
-      ┌─────────▼────────┐               ┌────────▼─────────┐
-      │ portfolio-service│               │  report-service  │
-      │      :8084       │               │      :8083       │
-      │ positions, live  │               │ per-user stats   │
-      │ prices, snapshots│               │ aggregation      │
-      └────────┬─────────┘               └────────▲─────────┘
-               │                                  │
-               │   snapshot-events (Kafka)        │
-               └──────────────────────────────────┘
+                              ┌──────────────┐
+                   register / │ auth-service │  issues JWT
+                   login      │   :8081      │
+                              └──────┬───────┘
+                                     │ JWT (Bearer)
+         ┌───────────────────────────┼───────────────────────────┐
+         │                           │                           │
+┌────────▼─────────┐       ┌─────────▼────────┐        ┌─────────▼────────┐
+│ portfolio-service│       │  report-service  │        │    ai-service    │
+│      :8084       │       │      :8083       │        │      :8085       │
+│ positions, live  │       │ per-user stats   │        │ trade journal,   │
+│ prices, snapshots│       │ aggregation      │        │ behaviour profile│
+│ trade journal    │       │                  │        │ via Claude API   │
+└────────┬─────────┘       └─────────▲────────┘        └─────────▲────────┘
+         │                           │                           │
+         │  snapshot-events (Kafka)  │                           │
+         ├───────────────────────────┘                           │
+         │                                                       │
+         │  trade-events (Kafka)                                 │
+         └───────────────────────────────────────────────────────┘
 ```
 
 - Each service is self-contained and owns its own PostgreSQL database.
@@ -52,6 +58,9 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 - `portfolio-service` publishes a `SnapshotCreatedEvent` to the Kafka topic
   `snapshot-events` whenever a portfolio snapshot is taken; `report-service`
   consumes them and maintains aggregated per-user statistics (idempotently).
+- `portfolio-service` also publishes a `TradeCreatedEvent` to `trade-events` on
+  every trade; `ai-service` consumes those into a local read model and never
+  touches the portfolio database directly.
 
 > Note: an earlier `finance-service` (income/expense tracking) was removed — the
 > project is now focused solely on portfolio tracking.
@@ -65,6 +74,7 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 | `auth-service`      | 8081 | `auth_db` (5433)     | Registration, login, JWT issuance, USER/ADMIN roles |
 | `portfolio-service` | 8084 | `portfolio_db` (5436)| Investment positions, Yahoo Finance quotes, snapshots, performance; publishes Kafka events |
 | `report-service`    | 8083 | `report_db` (5435)   | Consumes snapshot events, aggregated per-user statistics |
+| `ai-service`        | 8085 | `ai_db` (5437)       | Consumes trade events, builds an LLM behavioural profile of the investor |
 
 ---
 
@@ -73,13 +83,15 @@ exchange over **Kafka**, and a dedicated PostgreSQL database per service.
 - **Java 17**, **Spring Boot 3.5**, Gradle (wrapper in each service)
 - **Spring Security** + **JWT** (jjwt), roles and `@PreAuthorize`
 - **Spring Data JPA** + **PostgreSQL 15**
-- **Liquibase** — schema migrations (auth, portfolio); `report-service` uses JPA
-  `ddl-auto: update`
+- **Liquibase** — schema migrations (auth, portfolio, ai); `report-service` uses
+  JPA `ddl-auto: update`
 - **Apache Kafka** (Confluent 7.6) — event-driven communication
+- **Anthropic Java SDK** (`com.anthropic:anthropic-java`) — Claude API with
+  structured outputs, used by `ai-service`
 - **Caffeine Cache** — Yahoo Finance quote cache (5 min TTL)
 - **Testcontainers**, JUnit 5 — integration tests
-- **Docker / Docker Compose** — full stack: all three services (built from
-  per-service `Dockerfile`s), the three PostgreSQL databases, Kafka, Zookeeper
+- **Docker / Docker Compose** — full stack: all four services (built from
+  per-service `Dockerfile`s), the four PostgreSQL databases, Kafka, Zookeeper
 
 ---
 
@@ -104,13 +116,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
-This builds and starts everything: the three services (`auth-service`,
-`portfolio-service`, `report-service`), their databases (`postgres-auth`,
-`postgres-report`, `postgres-portfolio`), plus `zookeeper` and `kafka`. Add
-`-d` to run detached.
+This builds and starts everything: the four services (`auth-service`,
+`portfolio-service`, `report-service`, `ai-service`), their databases
+(`postgres-auth`, `postgres-report`, `postgres-portfolio`, `postgres-ai`), plus
+`zookeeper` and `kafka`. Add `-d` to run detached.
 
 Once up, the services are reachable on `localhost:8081` (auth), `localhost:8084`
-(portfolio), and `localhost:8083` (report).
+(portfolio), `localhost:8083` (report), and `localhost:8085` (ai).
 
 ### Running a service outside Docker (optional)
 
@@ -118,7 +130,7 @@ Each service is also a standalone Gradle project. To run one locally against the
 Dockerized infrastructure, start the databases/Kafka only and use `bootRun`:
 
 ```bash
-docker compose up -d postgres-auth postgres-portfolio postgres-report kafka zookeeper
+docker compose up -d postgres-auth postgres-portfolio postgres-report postgres-ai kafka zookeeper
 cd portfolio-service && ./gradlew bootRun
 ```
 
@@ -135,6 +147,9 @@ The `.env` file (see `.env.example`):
 | `AUTH_DB_NAME` / `AUTH_DB_USER` / `AUTH_DB_PASSWORD` | auth-service database |
 | `PORTFOLIO_DB_NAME` / `PORTFOLIO_DB_USER` / `PORTFOLIO_DB_PASSWORD` | portfolio-service database |
 | `REPORT_DB_NAME` / `REPORT_DB_USER` / `REPORT_DB_PASSWORD` | report-service database |
+| `AI_DB_NAME` / `AI_DB_USER` / `AI_DB_PASSWORD` | ai-service database |
+| `ANTHROPIC_API_KEY` | Claude API key. Without it `ai-service` starts but `analyze` returns `503` |
+| `ANTHROPIC_MODEL` | Model id (default `claude-opus-5`) |
 | `JWT_SECRET` | Shared secret for signing/verifying JWTs (base64) |
 | `JWT_EXPIRATION` | Token lifetime in ms (default `3600000` — 1 hour) |
 
@@ -160,6 +175,8 @@ variables (defaults are defined in `application.yml`).
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST`   | `/trade/trades` | Record a trade (optionally with journal fields: `rationale`, `conviction` 1–5, `emotion`) |
+| `GET`    | `/trade/trades` | The user's trade journal, newest first |
 | `POST`   | `/positions` | Add a position |
 | `GET`    | `/positions` | List the user's positions |
 | `DELETE` | `/positions/{id}` | Delete a position |
@@ -184,6 +201,33 @@ schedule — weekdays at 18:00 (`SnapshotScheduler`).
 `/report/stats` returns `totalUsers`, `totalValueAllUsers`, and a per-user list
 (last value, last snapshot date, snapshot count) — built up from the
 `snapshot-events` stream.
+
+### ai-service (`:8085`)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/ai/behavior/analyze` | Queue a behavioural profile build; returns `202` with a `PENDING` record |
+| `GET`  | `/ai/behavior/profile` | Latest profile: `PENDING`, `READY` or `FAILED` (`204` if none yet) |
+
+**How the profile is built.** Everything numeric is computed in Java, not by the
+model — for every trade `ai-service` pulls five years of daily closes from Yahoo
+and derives:
+
+| Metric | Meaning |
+|--------|---------|
+| `pricePercentile90d` | Where the trade price sat in the 90-day range, 0–100. A buy near 100 is chasing a rally. |
+| `priorReturn30d` | Price move in the 30 days *before* the trade. A sell after a deep drop is a drawdown exit. |
+| `forwardReturn30d` | Price move in the 30 days *after* the trade. |
+| `timingScore` | Whether the decision worked out: equals `forwardReturn30d` for buys, negated for sells. |
+
+Those numbers, plus the user's own `rationale` / `conviction` / `emotion`, go to
+Claude, which only interprets them — looking for the gap between what the
+investor said and what they actually did. The response comes back through
+structured outputs as summary, patterns, strengths and recommendations.
+
+Generation runs asynchronously (`@Async`) because a call takes tens of seconds;
+the frontend polls `/ai/behavior/profile` until the status is final. Without
+`ANTHROPIC_API_KEY` the service still starts, and `analyze` returns `503`.
 
 ---
 
@@ -214,6 +258,15 @@ Event payload (`SnapshotCreatedEvent`): `eventId`, `userId`, `snapshotDate`,
 and processed ids are stored in a processed-events table, which prevents double
 counting if an event is redelivered.
 
+- Topic: **`trade-events`**
+- Producer: `portfolio-service` (`TradeEventProducer`) — published on every trade
+- Consumer: `ai-service`, group `ai-service` (`TradeEventListener`)
+
+Event payload (`TradeCreatedEvent`): `tradeId`, `userId`, `ticker`, `type`,
+`quantity`, `price`, `tradeDate`, plus the journal fields `rationale`,
+`conviction` and `emotion`. `ai-service` stores these in `trade_records` keyed by
+`tradeId`, so a redelivered event simply overwrites the row with identical data.
+
 ---
 
 ## Tests
@@ -236,8 +289,8 @@ to `main` on JDK 17, in two jobs:
 
 - **`build-portfolio`** — builds **and tests** `portfolio-service`
   (`./gradlew build`, Testcontainers integration tests included).
-- **`build-others`** — a matrix over `auth-service` and `report-service` that
-  builds them without tests (`./gradlew build -x test`).
+- **`build-others`** — a matrix over `auth-service`, `report-service` and
+  `ai-service` that builds them without tests (`./gradlew build -x test`).
 
 ---
 
@@ -245,10 +298,21 @@ to `main` on JDK 17, in two jobs:
 
 ```
 .
-├── docker-compose.yml          # full stack: 3 services + PostgreSQL × 3 + Kafka + Zookeeper
+├── docker-compose.yml          # full stack: 4 services + PostgreSQL × 4 + Kafka + Zookeeper
 ├── .env.example                # environment variable template
-├── .github/workflows/ci.yml    # CI (test portfolio, build auth/report)
+├── .github/workflows/ci.yml    # CI (test portfolio, build auth/report/ai)
+├── docker-compose.prod.yml     # production stack for a server (restart policies, no exposed infra ports)
+├── DEPLOY.md                   # free hosting guide (Oracle Cloud Always Free)
 ├── auth-service/               # authentication service (+ Dockerfile)
 ├── portfolio-service/          # investment portfolio service, Kafka producer (+ Dockerfile)
-└── report-service/             # aggregation service, Kafka consumer (+ Dockerfile)
+├── report-service/             # aggregation service, Kafka consumer (+ Dockerfile)
+└── ai-service/                 # behavioural profile via Claude, Kafka consumer (+ Dockerfile)
 ```
+
+---
+
+## Deployment
+
+The stack can be hosted for free on an Oracle Cloud Always Free ARM VM using
+`docker-compose.prod.yml` (restart policies, capped JVM heaps, infra ports not
+exposed publicly). See [DEPLOY.md](DEPLOY.md) for the step-by-step guide.

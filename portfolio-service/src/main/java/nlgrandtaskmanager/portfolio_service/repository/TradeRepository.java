@@ -11,4 +11,6 @@ import java.util.UUID;
 @Repository
 public interface TradeRepository extends JpaRepository<Trade, UUID> {
     List<Trade> findByUserIdAndTicker(UUID userId, String ticker);
+
+    List<Trade> findByUserIdOrderByTradeDateDesc(UUID userId);
 }

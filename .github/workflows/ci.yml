@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [ auth-service, report-service ]
+        service: [ auth-service, report-service, ai-service ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
