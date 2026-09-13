@@ -12,6 +12,7 @@ import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.model.Trade;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
 import nlgrandtaskmanager.portfolio_service.repository.TradeRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -56,19 +57,24 @@ public class TradeService {
 
         List<Trade> trades = tradeRepository.findByUserIdAndTicker(userId, request.ticker());
 
-        List<Trade> buys = trades.stream()
-                .filter(t -> t.getType() == TradeType.BUY)
-                .toList();
+        BigDecimal boughtQuantity = BigDecimal.ZERO;
+        BigDecimal boughtCost = BigDecimal.ZERO;
+        BigDecimal soldQuantity = BigDecimal.ZERO;
 
-        BigDecimal totalQuantity = buys.stream()
-                .map(Trade::getQuantity)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        for (Trade t : trades) {
+            if (t.getType() == TradeType.BUY) {
+                boughtQuantity = boughtQuantity.add(t.getQuantity());
+                boughtCost = boughtCost.add(t.getPrice().multiply(t.getQuantity()));
+            } else {
+                soldQuantity = soldQuantity.add(t.getQuantity());
+            }
+        }
 
-        BigDecimal totalCost = buys.stream()
-                .map(t -> t.getPrice().multiply(t.getQuantity()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalQuantity = getBigDecimal(request, boughtQuantity, soldQuantity);
 
-        BigDecimal averagePrice = totalCost.divide(totalQuantity, 2, RoundingMode.HALF_UP);
+        BigDecimal averagePrice = boughtQuantity.signum() > 0
+                ? boughtCost.divide(boughtQuantity, 2, RoundingMode.HALF_UP)
+                : null;
 
         Position position = positionRepository
                 .findByUserIdAndTicker(userId, request.ticker())
@@ -85,6 +91,19 @@ public class TradeService {
         positionRepository.save(position);
 
         tradeEventProducer.publish(toEvent(trade));
+    }
+
+    private static @NonNull BigDecimal getBigDecimal(CreateTradeRequest request, BigDecimal boughtQuantity, BigDecimal soldQuantity) {
+        BigDecimal totalQuantity = boughtQuantity.subtract(soldQuantity);
+
+        if (request.type() == TradeType.SELL && totalQuantity.signum() < 0) {
+            BigDecimal available = totalQuantity.add(request.quantity());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Not enough shares of " + request.ticker()
+                            + ": available " + available.toPlainString()
+                            + ", requested " + request.quantity().toPlainString());
+        }
+        return totalQuantity;
     }
 
     /**
