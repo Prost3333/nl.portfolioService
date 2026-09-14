@@ -9,3 +9,8 @@ databaseChangeLog:
       file: db/changelog/changes/004-create-trades-table.yaml
   - include:
       file: db/changelog/changes/005-add-journal-fields-to-trades.yaml
+  # Личные данные: файлы лежат в db/changelog/local/, который не коммитится.
+  # errorIfMissingOrEmpty: false — на чистом клоне папки нет, и это не ошибка.
+  - includeAll:
+      path: db/changelog/local/
+      errorIfMissingOrEmpty: false

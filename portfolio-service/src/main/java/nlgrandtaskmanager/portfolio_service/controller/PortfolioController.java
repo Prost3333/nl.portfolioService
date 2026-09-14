@@ -5,6 +5,7 @@ import nlgrandtaskmanager.portfolio_service.dto.PerformanceItem;
 import nlgrandtaskmanager.portfolio_service.dto.PortfolioSummaryResponse;
 import nlgrandtaskmanager.portfolio_service.dto.SnapshotResponse;
 import nlgrandtaskmanager.portfolio_service.service.PortfolioService;
+import nlgrandtaskmanager.portfolio_service.service.TradeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +23,7 @@ import java.util.UUID;
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
+    private final TradeService tradeService;
 
     @GetMapping("/summary")
     public PortfolioSummaryResponse getSummary(Authentication authentication){
@@ -40,6 +43,19 @@ public class PortfolioController {
         UUID userId = (UUID) authentication.getPrincipal();
         portfolioService.saveSnapshot(userId);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * Разовое восстановление истории по журналу сделок: пересобирает позиции и достраивает
+     * снимки задним числом. Нужен после импорта сделок мимо API (Liquibase-миграция).
+     * Вызывать повторно безопасно — уже существующие снимки не трогаются.
+     */
+    @PostMapping("/backfill-history")
+    public Map<String, Integer> backfillHistory(Authentication authentication) {
+        UUID userId = (UUID) authentication.getPrincipal();
+        return Map.of(
+                "positions", tradeService.rebuildPositions(userId),
+                "snapshots", portfolioService.backfillHistory(userId));
     }
 
     @GetMapping("/admin/snapshots/{userId}")

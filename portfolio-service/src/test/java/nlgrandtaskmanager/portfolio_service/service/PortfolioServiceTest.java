@@ -156,4 +156,24 @@ class PortfolioServiceTest {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Position with ticker " + ticker + " not found"));
     }
+
+    @Test
+    void getSummary_doesNotFail_whenPositionIsFullySold() {
+        Position closed = Position.builder()
+                .userId(userId)
+                .ticker("TGBT.AS")
+                .name("VanEck iBoxx EUR Sovereign")
+                .quantity(BigDecimal.ZERO)
+                .averagePrice(new BigDecimal("12.50"))
+                .createdAt(Instant.now())
+                .build();
+
+        when(positionRepository.findByUserId(userId)).thenReturn(List.of(closed));
+        when(priceService.getPrice("TGBT.AS")).thenReturn(new BigDecimal("11.84"));
+
+        PortfolioSummaryResponse result = portfolioService.getSummary(userId);
+
+        assertThat(result.positions()).hasSize(1);
+        assertThat(result.positions().get(0).value()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
 }

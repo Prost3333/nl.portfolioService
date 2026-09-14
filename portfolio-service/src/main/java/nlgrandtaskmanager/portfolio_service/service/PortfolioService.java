@@ -1,9 +1,13 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.dto.*;
 import nlgrandtaskmanager.portfolio_service.kafka.SnapshotEventProducer;
+import nlgrandtaskmanager.portfolio_service.enums.TradeType;
 import nlgrandtaskmanager.portfolio_service.model.PortfolioSnapshot;
+import nlgrandtaskmanager.portfolio_service.model.Trade;
+import nlgrandtaskmanager.portfolio_service.repository.TradeRepository;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.repository.PortfolioSnapshotRepository;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
@@ -13,6 +17,14 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.TreeSet;
+import java.util.Set;
+import java.util.NavigableMap;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,6 +36,7 @@ public class PortfolioService {
     private final PriceService priceService;
     private final PortfolioSnapshotRepository snapshotRepository;
     private final SnapshotEventProducer snapshotEventProducer;
+    private final TradeRepository tradeRepository;
 
 
     public PortfolioSummaryResponse getSummary(UUID userId) {
@@ -66,7 +79,9 @@ public class PortfolioService {
         if (averagePrice != null && averagePrice.compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal costBasis = averagePrice.multiply(position.getQuantity());
             unrealizedPL = value.subtract(costBasis).setScale(2, RoundingMode.HALF_UP);
-            unrealizedPLPercent = percentOf(unrealizedPL, costBasis);
+            // у полностью проданной бумаги количество нулевое, значит и вложено в неё ноль:
+            // процент от нуля не определён, percentOf на таком costBasis падает с ArithmeticException
+            unrealizedPLPercent = costBasis.signum() > 0 ? percentOf(unrealizedPL, costBasis) : null;
         }
 
         return new PositionValue(position.getTicker(), position.getName(), position.getQuantity(),
@@ -126,6 +141,90 @@ public class PortfolioService {
                 , snapshot.getUserId(), today, snapshot.getTotalValue()));
 
 
+    }
+
+    /**
+     * Восстанавливает историю стоимости портфеля задним числом, по журналу сделок.
+     * {@link #saveSnapshot} умеет писать только сегодняшний день, поэтому импортированные
+     * сделки сами по себе графика не дают — до первого запуска планировщика история пуста.
+     * <p>
+     * На каждый торговый день состав портфеля берётся из сделок, цена — из дневных
+     * закрытий Yahoo. Уже существующие снимки не трогаются, так что метод можно
+     * вызывать повторно после добавления новых сделок.
+     *
+     * @return сколько снимков создано
+     */
+    @Transactional
+    public int backfillHistory(UUID userId) {
+        List<Trade> trades = tradeRepository.findByUserIdOrderByTradeDateDesc(userId);
+        if (trades.isEmpty()) {
+            return 0;
+        }
+
+        LocalDate from = trades.stream().map(Trade::getTradeDate).min(LocalDate::compareTo).orElseThrow();
+        LocalDate to = LocalDate.now();
+
+        Map<String, NavigableMap<LocalDate, BigDecimal>> closes = new HashMap<>();
+        Set<LocalDate> tradingDays = new TreeSet<>();
+        for (String ticker : trades.stream().map(Trade::getTicker).collect(Collectors.toSet())) {
+            NavigableMap<LocalDate, BigDecimal> series = priceService.getDailyCloses(ticker, from, to);
+            closes.put(ticker, series);
+            tradingDays.addAll(series.keySet());
+        }
+        if (tradingDays.isEmpty()) {
+            return 0;
+        }
+
+        Map<LocalDate, List<Trade>> tradesByDate = trades.stream()
+                .collect(Collectors.groupingBy(Trade::getTradeDate));
+
+        Set<LocalDate> alreadyStored = snapshotRepository.findByUserIdOrderBySnapshotDateAsc(userId).stream()
+                .map(PortfolioSnapshot::getSnapshotDate)
+                .collect(Collectors.toSet());
+
+        Map<String, BigDecimal> holdings = new LinkedHashMap<>();
+        List<PortfolioSnapshot> snapshots = new ArrayList<>();
+
+        for (LocalDate day : tradingDays) {
+            for (Trade trade : tradesByDate.getOrDefault(day, List.of())) {
+                BigDecimal signed = trade.getType() == TradeType.BUY
+                        ? trade.getQuantity()
+                        : trade.getQuantity().negate();
+                holdings.merge(trade.getTicker(), signed, BigDecimal::add);
+            }
+
+            if (alreadyStored.contains(day) || holdings.isEmpty()) {
+                continue;
+            }
+
+            BigDecimal totalValue = BigDecimal.ZERO;
+            for (Map.Entry<String, BigDecimal> holding : holdings.entrySet()) {
+                if (holding.getValue().signum() == 0) {
+                    continue;
+                }
+                Map.Entry<LocalDate, BigDecimal> close = closes.get(holding.getKey()).floorEntry(day);
+                if (close == null) {
+                    continue;
+                }
+                totalValue = totalValue.add(holding.getValue().multiply(close.getValue()));
+            }
+
+            if (totalValue.signum() == 0) {
+                continue;
+            }
+
+            snapshots.add(PortfolioSnapshot.builder()
+                    .userId(userId)
+                    .snapshotDate(day)
+                    .totalValue(totalValue.setScale(2, RoundingMode.HALF_UP))
+                    .build());
+        }
+
+        List<PortfolioSnapshot> saved = snapshotRepository.saveAll(snapshots);
+        saved.forEach(snapshot -> snapshotEventProducer.publish(new SnapshotCreatedEvent(
+                snapshot.getId(), userId, snapshot.getSnapshotDate(), snapshot.getTotalValue())));
+
+        return saved.size();
     }
 
     public List<SnapshotResponse> getHistory(UUID userId, String period) {

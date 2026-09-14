@@ -20,7 +20,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 
@@ -104,6 +106,63 @@ public class TradeService {
                             + ", requested " + request.quantity().toPlainString());
         }
         return totalQuantity;
+    }
+
+    /**
+     * Пересобирает позиции из журнала сделок. Нужен после того, как сделки попали в базу
+     * мимо {@link #addTrade}, например импортом через Liquibase: там пишется только
+     * таблица trades, а positions остаётся с прежними количествами.
+     * <p>
+     * Трогает только тикеры, которые встречаются в сделках, — позиции, заведённые иначе,
+     * остаются как есть.
+     *
+     * @return сколько позиций создано или обновлено
+     */
+    @Transactional
+    public int rebuildPositions(UUID userId) {
+        Map<String, BigDecimal> boughtQuantity = new LinkedHashMap<>();
+        Map<String, BigDecimal> boughtCost = new LinkedHashMap<>();
+        Map<String, BigDecimal> soldQuantity = new LinkedHashMap<>();
+
+        for (Trade trade : tradeRepository.findByUserIdOrderByTradeDateDesc(userId)) {
+            String ticker = trade.getTicker();
+            if (trade.getType() == TradeType.BUY) {
+                boughtQuantity.merge(ticker, trade.getQuantity(), BigDecimal::add);
+                boughtCost.merge(ticker, trade.getPrice().multiply(trade.getQuantity()), BigDecimal::add);
+            } else {
+                soldQuantity.merge(ticker, trade.getQuantity(), BigDecimal::add);
+            }
+        }
+
+        for (String ticker : boughtQuantity.keySet()) {
+            BigDecimal bought = boughtQuantity.get(ticker);
+            BigDecimal sold = soldQuantity.getOrDefault(ticker, BigDecimal.ZERO);
+
+            BigDecimal averagePrice = bought.signum() > 0
+                    ? boughtCost.get(ticker).divide(bought, 2, RoundingMode.HALF_UP)
+                    : null;
+
+            Position position = positionRepository
+                    .findByUserIdAndTicker(userId, ticker)
+                    .orElseGet(() -> Position.builder()
+                            .userId(userId)
+                            .ticker(ticker)
+                            .name(resolveName(ticker))
+                            .createdAt(Instant.now())
+                            .build());
+
+            position.setQuantity(bought.subtract(sold));
+            position.setAveragePrice(averagePrice);
+
+            positionRepository.save(position);
+        }
+
+        return boughtQuantity.size();
+    }
+
+    private String resolveName(String ticker) {
+        TickerInfo quote = priceService.getQuote(ticker);
+        return quote != null && quote.name() != null ? quote.name() : ticker;
     }
 
     /**

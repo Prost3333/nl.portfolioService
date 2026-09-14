@@ -14,7 +14,7 @@ public class YahooResponse {
     public record YahooChart(List<YahooResult> result) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record YahooResult(YahooMeta meta, Indicators indicators) {}
+    public record YahooResult(YahooMeta meta, Indicators indicators, List<Long> timestamp) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record YahooMeta(

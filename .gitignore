@@ -53,3 +53,6 @@ HELP.md
 *.tar.gz
 *.rar
 *.7z
+
+# Личная история сделок — не публиковать
+**/db/changelog/local/

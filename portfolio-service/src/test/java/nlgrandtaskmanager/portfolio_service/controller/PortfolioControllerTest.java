@@ -6,6 +6,7 @@ import nlgrandtaskmanager.portfolio_service.dto.PositionValue;
 import nlgrandtaskmanager.portfolio_service.security.JwtAuthenticationFilter;
 import nlgrandtaskmanager.portfolio_service.security.JwtService;
 import nlgrandtaskmanager.portfolio_service.service.PortfolioService;
+import nlgrandtaskmanager.portfolio_service.service.TradeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -32,6 +33,9 @@ class PortfolioControllerTest {
 
     @MockitoBean
     private PortfolioService portfolioService;
+
+    @MockitoBean
+    private TradeService tradeService;
 
     @MockitoBean
     private JwtService jwtService;
