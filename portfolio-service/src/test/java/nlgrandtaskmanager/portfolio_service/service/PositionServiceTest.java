@@ -29,9 +29,6 @@ class PositionServiceTest {
     @Mock
     private PositionRepository positionRepository;
 
-    @Mock
-    private PriceService priceService;
-
     @InjectMocks
     private PositionService positionService;
 
@@ -61,15 +58,49 @@ class PositionServiceTest {
     }
 
     @Test
-    void delete_removesPosition_whenUserIsOwner() {
+    void delete_removesPosition_whenFullySold() {
         UUID positionId = UUID.randomUUID();
-        Position position = buildPosition(positionId, userId, "AAPL", "Apple", BigDecimal.ONE);
+        Position position = buildPosition(positionId, userId, "AAPL", "Apple", BigDecimal.ZERO);
 
         when(positionRepository.findById(positionId)).thenReturn(Optional.of(position));
 
         positionService.delete(userId, positionId);
 
         verify(positionRepository).delete(position);
+    }
+
+    @Test
+    void delete_throwsConflict_whenPositionStillHasShares() {
+        UUID positionId = UUID.randomUUID();
+        Position position = buildPosition(positionId, userId, "AAPL", "Apple", new BigDecimal("5"));
+
+        when(positionRepository.findById(positionId)).thenReturn(Optional.of(position));
+
+        assertThatThrownBy(() -> positionService.delete(userId, positionId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(positionRepository, never()).delete(any());
+    }
+
+    /**
+     * Отрицательный остаток — признак испорченных данных. Молча удалять такую позицию
+     * нельзя: поломка исчезнет вместе со строкой, и разбираться будет не с чем.
+     */
+    @Test
+    void delete_throwsConflict_whenQuantityIsNegative() {
+        UUID positionId = UUID.randomUUID();
+        Position position = buildPosition(positionId, userId, "AAPL", "Apple", new BigDecimal("-2"));
+
+        when(positionRepository.findById(positionId)).thenReturn(Optional.of(position));
+
+        assertThatThrownBy(() -> positionService.delete(userId, positionId))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+
+        verify(positionRepository, never()).delete(any());
     }
 
     @Test

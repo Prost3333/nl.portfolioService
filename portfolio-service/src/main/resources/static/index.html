@@ -1273,7 +1273,13 @@
         try {
             const resp = await api("/positions/" + id, { method: "DELETE" });
             if (!resp.ok && resp.status !== 204) {
-                toast("Не удалось удалить (" + resp.status + ")", "err");
+                // 409 приходит, когда бумага ещё не продана — в message лежит остаток
+                let msg = "Не удалось удалить (" + resp.status + ")";
+                try {
+                    const err = await resp.json();
+                    if (err && err.message) msg = err.message;
+                } catch (_) { /* тело не JSON — оставляем дефолт */ }
+                toast(msg, "err");
                 return;
             }
             toast(ticker + " удалена", "ok");

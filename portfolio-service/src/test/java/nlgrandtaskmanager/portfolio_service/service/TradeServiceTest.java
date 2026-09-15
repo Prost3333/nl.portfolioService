@@ -22,6 +22,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +64,37 @@ public class TradeServiceTest {
 
     }
 
+    /**
+     * Позицию с нулевым остатком пользователь убрал через DELETE /positions.
+     * Пересборка не должна возвращать её обратно, иначе удаление ничего не значит.
+     */
+    @Test
+    void rebuildPositions_doesNotRecreateDeletedPosition_whenJournalNetsToZero() {
+        when(tradeRepository.findByUserIdOrderByTradeDateDesc(userId))
+                .thenReturn(List.of(trade(TradeType.BUY, "2"), trade(TradeType.SELL, "2")));
+        when(positionRepository.findByUserIdAndTicker(userId, "AAPL")).thenReturn(Optional.empty());
+
+        int rebuilt = tradeService.rebuildPositions(userId);
+
+        verify(positionRepository, never()).save(any());
+        assertThat(rebuilt).isZero();
+    }
+
+    /** А вот существующую позицию продажа в ноль обнуляет, но не удаляет. */
+    @Test
+    void rebuildPositions_zeroesExistingPosition_whenJournalNetsToZero() {
+        when(tradeRepository.findByUserIdOrderByTradeDateDesc(userId))
+                .thenReturn(List.of(trade(TradeType.BUY, "2"), trade(TradeType.SELL, "2")));
+        when(positionRepository.findByUserIdAndTicker(userId, "AAPL")).thenReturn(Optional.of(position()));
+
+        int rebuilt = tradeService.rebuildPositions(userId);
+
+        ArgumentCaptor<Position> captor = ArgumentCaptor.forClass(Position.class);
+        verify(positionRepository).save(captor.capture());
+        assertThat(captor.getValue().getQuantity()).isEqualByComparingTo("0");
+        assertThat(rebuilt).isEqualTo(1);
+    }
+
     private Position position() {
         return Position.builder().
                 userId(userId)
@@ -69,10 +102,18 @@ public class TradeServiceTest {
                 .quantity(BigDecimal.valueOf(5))
                 .averagePrice(BigDecimal.valueOf(100)).build();
     }
-    private Trade trade(){
-        return Trade.builder().type(TradeType.BUY)
-                .quantity(BigDecimal.valueOf(2))
-                .price(BigDecimal.valueOf(100)).build();
+    private Trade trade() {
+        return trade(TradeType.BUY, "2");
+    }
+
+    private Trade trade(TradeType type, String quantity) {
+        return Trade.builder()
+                .ticker("AAPL")
+                .type(type)
+                .quantity(new BigDecimal(quantity))
+                .price(BigDecimal.valueOf(100))
+                .tradeDate(LocalDate.now())
+                .build();
     }
 
 

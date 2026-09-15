@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -113,12 +114,17 @@ public class TradeService {
     }
 
     /**
-     * Пересобирает позиции из журнала сделок. Нужен после того, как сделки попали в базу
-     * мимо {@link #addTrade}, например импортом через Liquibase: там пишется только
-     * таблица trades, а positions остаётся с прежними количествами.
+     * Пересобирает позиции из журнала сделок. Журнал — единственный источник правды,
+     * positions лишь витрина над ним, поэтому метод можно звать в любой момент: он
+     * приводит витрину к тому, что говорят сделки. Нужен, когда сделки попали в базу
+     * мимо {@link #addTrade}, например импортом через Liquibase.
      * <p>
-     * Трогает только тикеры, которые встречаются в сделках, — позиции, заведённые иначе,
-     * остаются как есть.
+     * Трогает только тикеры, которые встречаются в сделках.
+     * <p>
+     * Позицию с нулевым остатком, которой сейчас нет в базе, не создаёт: ноль означает,
+     * что бумага давно продана, а отсутствие строки — что пользователь убрал её из списка
+     * через DELETE /positions. Воскрешать такую позицию нельзя, иначе удаление ничего
+     * не значит и бумага возвращается после первой же пересборки.
      *
      * @return сколько позиций создано или обновлено
      */
@@ -138,30 +144,39 @@ public class TradeService {
             }
         }
 
+        int rebuilt = 0;
+
         for (String ticker : boughtQuantity.keySet()) {
             BigDecimal bought = boughtQuantity.get(ticker);
             BigDecimal sold = soldQuantity.getOrDefault(ticker, BigDecimal.ZERO);
+            BigDecimal quantity = bought.subtract(sold);
+
+            Optional<Position> existing = positionRepository.findByUserIdAndTicker(userId, ticker);
+            if (existing.isEmpty() && quantity.signum() == 0) {
+                continue;
+            }
 
             BigDecimal averagePrice = bought.signum() > 0
                     ? boughtCost.get(ticker).divide(bought, 2, RoundingMode.HALF_UP)
                     : null;
 
-            Position position = positionRepository
-                    .findByUserIdAndTicker(userId, ticker)
-                    .orElseGet(() -> Position.builder()
-                            .userId(userId)
-                            .ticker(ticker)
-                            .name(resolveName(ticker))
-                            .createdAt(Instant.now())
-                            .build());
+            // resolveName ходит в Yahoo, поэтому остаётся внутри orElseGet:
+            // для уже существующей позиции имя известно и запрос не нужен
+            Position position = existing.orElseGet(() -> Position.builder()
+                    .userId(userId)
+                    .ticker(ticker)
+                    .name(resolveName(ticker))
+                    .createdAt(Instant.now())
+                    .build());
 
-            position.setQuantity(bought.subtract(sold));
+            position.setQuantity(quantity);
             position.setAveragePrice(averagePrice);
 
             positionRepository.save(position);
+            rebuilt++;
         }
 
-        return boughtQuantity.size();
+        return rebuilt;
     }
 
     private String resolveName(String ticker) {
