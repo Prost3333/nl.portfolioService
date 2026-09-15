@@ -14,3 +14,8 @@ databaseChangeLog:
   - includeAll:
       path: db/changelog/local/
       errorIfMissingOrEmpty: false
+  # Строго после includeAll: локальный импорт добавляет настоящие сделки, и позиции,
+  # которые он покрывает, сиротами быть перестают. Поставить 007 выше — значит завести
+  # им ещё и синтетическую покупку сверху, то есть удвоить количество.
+  - include:
+      file: db/changelog/changes/007-backfill-trades-for-legacy-positions.yaml

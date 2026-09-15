@@ -1,13 +1,11 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
-import nlgrandtaskmanager.portfolio_service.dto.CreatePositionRequest;
+
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
-import nlgrandtaskmanager.portfolio_service.dto.TickerInfo;
 import nlgrandtaskmanager.portfolio_service.model.Position;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,30 +37,6 @@ class PositionServiceTest {
 
     private final UUID userId = UUID.randomUUID();
 
-    @Test
-    void create_savesPositionWithCorrectFields() {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.TEN);
-        Position saved = buildPosition(UUID.randomUUID(), userId, "AAPL", "Apple Inc", BigDecimal.TEN);
-
-        when(priceService.getQuote("AAPL")).thenReturn(new TickerInfo(BigDecimal.TEN, "Apple Inc"));
-        when(positionRepository.save(any(Position.class))).thenReturn(saved);
-
-        PositionResponse response = positionService.create(userId, request);
-
-        assertThat(response.ticker()).isEqualTo("AAPL");
-        assertThat(response.name()).isEqualTo("Apple Inc");
-        assertThat(response.quantity()).isEqualByComparingTo(BigDecimal.TEN);
-        assertThat(response.id()).isEqualTo(saved.getId());
-
-        ArgumentCaptor<Position> captor = ArgumentCaptor.forClass(Position.class);
-        verify(positionRepository).save(captor.capture());
-        Position captured = captor.getValue();
-        assertThat(captured.getUserId()).isEqualTo(userId);
-        assertThat(captured.getTicker()).isEqualTo("AAPL");
-        assertThat(captured.getName()).isEqualTo("Apple Inc");
-        assertThat(captured.getQuantity()).isEqualByComparingTo(BigDecimal.TEN);
-        assertThat(captured.getCreatedAt()).isNotNull();
-    }
 
     @Test
     void getPositions_returnsAllPositionsForUser() {

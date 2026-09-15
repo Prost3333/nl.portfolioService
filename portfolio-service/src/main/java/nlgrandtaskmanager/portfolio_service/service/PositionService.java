@@ -1,20 +1,18 @@
 package nlgrandtaskmanager.portfolio_service.service;
 
 
-import nlgrandtaskmanager.portfolio_service.dto.TickerInfo;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import nlgrandtaskmanager.portfolio_service.model.Position;
-import nlgrandtaskmanager.portfolio_service.dto.CreatePositionRequest;
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
 import nlgrandtaskmanager.portfolio_service.repository.PositionRepository;
+import nlgrandtaskmanager.portfolio_service.repository.TradeRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
+
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,38 +20,8 @@ import java.util.UUID;
 public class PositionService {
     private final PositionRepository positionRepository;
 
-    private  final PriceService priceService;
+    private final TradeRepository tradeRepository;
 
-    @Transactional
-    public PositionResponse create(UUID userId, CreatePositionRequest request) {
-        Position position;
-        Optional<Position> p = positionRepository.findByUserIdAndTicker(userId, request.ticker());
-
-        if (p.isPresent()) {
-            position = p.get();
-            position.setQuantity(
-                    position.getQuantity().add(request.quantity())
-            );
-
-        } else {
-            TickerInfo quote=priceService.getQuote(request.ticker());
-            if (quote == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown ticker: " + request.ticker());
-            }
-            String name= quote.name();
-            position = Position.builder()
-                    .userId(userId)
-                    .ticker(request.ticker())
-                    .name(name)
-                    .quantity(request.quantity())
-                    .createdAt(Instant.now())
-                    .build();
-        }
-
-        Position saved = positionRepository.save(position);
-
-        return toResponse(saved);
-    }
 
     public List<PositionResponse> getPositions(UUID userId) {
         return positionRepository.findByUserId(userId)
@@ -62,6 +30,7 @@ public class PositionService {
                 .toList();
     }
 
+    @Transactional
     public void delete(UUID userId, UUID positionId) {
         Position position = positionRepository.findById(positionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Position not found"));

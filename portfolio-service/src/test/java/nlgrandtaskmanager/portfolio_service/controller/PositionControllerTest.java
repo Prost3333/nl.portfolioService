@@ -2,7 +2,6 @@ package nlgrandtaskmanager.portfolio_service.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import nlgrandtaskmanager.portfolio_service.config.SecurityConfig;
-import nlgrandtaskmanager.portfolio_service.dto.CreatePositionRequest;
 import nlgrandtaskmanager.portfolio_service.dto.PositionResponse;
 import nlgrandtaskmanager.portfolio_service.security.JwtAuthenticationFilter;
 import nlgrandtaskmanager.portfolio_service.security.JwtService;
@@ -53,81 +52,6 @@ class PositionControllerTest {
         return new UsernamePasswordAuthenticationToken(USER_ID, null, List.of());
     }
 
-    // --- POST /positions ---
-
-    @Test
-    void createPosition_returns201_withValidRequest() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.TEN);
-        PositionResponse response = new PositionResponse(UUID.randomUUID(), "AAPL", "Apple Inc", BigDecimal.TEN, Instant.now());
-
-        when(positionService.create(eq(USER_ID), any())).thenReturn(response);
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.ticker").value("AAPL"))
-                .andExpect(jsonPath("$.quantity").value(10));
-    }
-
-    @Test
-    void createPosition_returns400_whenTickerIsBlank() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("", BigDecimal.TEN);
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createPosition_returns400_whenQuantityIsNull() throws Exception {
-        String body = """
-                {"ticker":"AAPL","name":"Apple Inc","quantity":null}
-                """;
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createPosition_returns400_whenQuantityIsNegative() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", new BigDecimal("-5"));
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createPosition_returns400_whenQuantityIsZero() throws Exception {
-        CreatePositionRequest request = new CreatePositionRequest("AAPL", BigDecimal.ZERO);
-
-        mockMvc.perform(post("/positions")
-                        .with(authentication(auth()))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createPosition_returns403_withoutAuthentication() throws Exception {
-        String body = """
-                {"ticker":"AAPL","name":"Apple Inc","quantity":10}
-                """;
-
-        mockMvc.perform(post("/positions")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isForbidden());
-    }
 
     // --- GET /positions ---
 

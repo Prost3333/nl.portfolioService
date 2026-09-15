@@ -36,14 +36,8 @@ public class TradeService {
     private final PriceService priceService;
     private final TradeEventProducer tradeEventProducer;
 
-    @Transactional
-    public void addTrade(UUID userId, CreateTradeRequest request) {
-        TickerInfo quote = priceService.getQuote(request.ticker());
-        if (quote == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown ticker: " + request.ticker());
-        }
-
-        Trade trade = Trade.builder()
+    public Trade tradeBuilder(UUID userId, CreateTradeRequest request){
+        return Trade.builder()
                 .userId(userId)
                 .ticker(request.ticker())
                 .quantity(request.quantity())
@@ -55,6 +49,16 @@ public class TradeService {
                 .conviction(request.conviction())
                 .emotion(request.emotion())
                 .build();
+    }
+
+    @Transactional
+    public void addTrade(UUID userId, CreateTradeRequest request) {
+        TickerInfo quote = priceService.getQuote(request.ticker());
+        if (quote == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown ticker: " + request.ticker());
+        }
+
+        Trade trade=tradeBuilder(userId,request);
         tradeRepository.save(trade);
 
         List<Trade> trades = tradeRepository.findByUserIdAndTicker(userId, request.ticker());

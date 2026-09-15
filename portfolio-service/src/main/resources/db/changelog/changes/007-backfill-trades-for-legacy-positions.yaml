@@ -1,0 +1,56 @@
+# Позиции, заведённые до перехода на журнал сделок.
+#
+# Раньше бумагу можно было добавить двумя путями: через POST /positions (писалась
+# только таблица positions) и через сделку. Теперь источник правды один — trades,
+# а positions пересобирается из него. Позиция без единой сделки в такой модели
+# обречена: первая же сделка по её тикеру перезапишет quantity значением из журнала,
+# и всё, что было заведено вручную, молча исчезнет.
+#
+# Поэтому на каждую такую позицию заводится синтетическая покупка на её количество.
+#
+# Про цену. У позиций, созданных через POST /positions, average_price не заполнялся
+# никогда — то есть почти у всех сирот цены покупки просто не существует, и взять
+# её неоткуда: миграция не ходит в Yahoo. Ставим 0 и говорим об этом прямо в
+# rationale. Ноль здесь читается как «неизвестно», а не как «купил даром»:
+# PortfolioService.toPositionValue считает P&L только при averagePrice > 0, поэтому
+# по такой бумаге показывается количество и текущая стоимость, но не прибыль.
+# Врать цифрой хуже, чем её не показать.
+#
+# Если пользователь потом добавит настоящую покупку того же тикера, средняя
+# смешает нулевую синтетику с реальной ценой и получится заниженное значение.
+# Лечится удалением синтетической сделки из журнала — она для того и помечена.
+databaseChangeLog:
+  - changeSet:
+      id: 007-backfill-trades-for-legacy-positions
+      author: Prost3333
+      comment: Синтетическая покупка на каждую позицию без сделок, чтобы positions полностью выводилась из trades
+      changes:
+        - sql:
+            dbms: postgresql
+            sql: |
+              INSERT INTO trades (id, user_id, ticker, quantity, price, type, trade_date, created_at, rationale)
+              SELECT gen_random_uuid(),
+                     p.user_id,
+                     p.ticker,
+                     p.quantity,
+                     COALESCE(p.average_price, 0),
+                     'BUY',
+                     p.created_at::date,
+                     p.created_at,
+                     CASE
+                       WHEN p.average_price IS NULL
+                         THEN 'Импорт до перехода на журнал сделок: позиция была заведена вручную, цена покупки не сохранилась.'
+                       ELSE 'Импорт до перехода на журнал сделок: позиция была заведена вручную, цена взята из средней по позиции.'
+                     END
+              FROM positions p
+              WHERE p.quantity > 0
+                AND NOT EXISTS (
+                      SELECT 1 FROM trades t
+                      WHERE t.user_id = p.user_id
+                        AND t.ticker = p.ticker);
+      rollback:
+        - sql:
+            dbms: postgresql
+            sql: |
+              DELETE FROM trades
+              WHERE rationale LIKE 'Импорт до перехода на журнал сделок:%';
