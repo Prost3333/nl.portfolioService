@@ -177,9 +177,8 @@ variables (defaults are defined in `application.yml`).
 |--------|------|-------------|
 | `POST`   | `/trade/trades` | Record a trade (optionally with journal fields: `rationale`, `conviction` 1–5, `emotion`) |
 | `GET`    | `/trade/trades` | The user's trade journal, newest first |
-| `POST`   | `/positions` | Add a position |
 | `GET`    | `/positions` | List the user's positions |
-| `DELETE` | `/positions/{id}` | Delete a position |
+| `DELETE` | `/positions/{id}` | Remove a fully sold position from the list; `409` while it still holds shares. The trade journal is never deleted |
 | `GET`    | `/portfolio/summary` | Portfolio summary with live prices |
 | `GET`    | `/portfolio/history?period=all` | Snapshot history |
 | `POST`   | `/portfolio/snapshot` | Take a portfolio snapshot (publishes a Kafka event) |
