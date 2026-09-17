@@ -11,6 +11,7 @@ import nlgrandtaskmanager.portfolio_service.enums.TradeType;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Locale;
 
 public record CreateTradeRequest(
         @NotBlank String ticker,
@@ -29,6 +30,9 @@ public record CreateTradeRequest(
         }
         if (rationale != null && rationale.isBlank()) {
             rationale = null;
+        }
+        if (ticker!=null){
+            ticker=ticker.trim().toUpperCase(Locale.ROOT);
         }
     }
 }

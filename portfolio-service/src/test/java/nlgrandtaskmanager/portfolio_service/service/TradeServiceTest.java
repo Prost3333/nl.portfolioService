@@ -50,9 +50,9 @@ public class TradeServiceTest {
     @Test
     void addTrade_derivesQuantityFromJournal() {
         when(positionRepository.findByUserIdAndTicker(userId, "AAPL")).thenReturn(Optional.of(position()));
-        when(priceService.getQuote("AAPL")).thenReturn(new TickerInfo(BigDecimal.valueOf(100),"Apple corp"));
-        when(tradeRepository.findByUserIdAndTicker(userId,"AAPL")).thenReturn(List.of(trade()));
-        tradeService.addTrade(userId,new CreateTradeRequest("AAPL", BigDecimal.valueOf(2)
+        when(priceService.getQuote("AAPL")).thenReturn(new TickerInfo(BigDecimal.valueOf(100), "Apple corp"));
+        when(tradeRepository.findByUserIdAndTicker(userId, "AAPL")).thenReturn(List.of(trade()));
+        tradeService.addTrade(userId, new CreateTradeRequest("AAPL", BigDecimal.valueOf(2)
                 , TradeType.BUY, BigDecimal.valueOf(100), LocalDate.now(), null, null
                 , null));
 
@@ -80,7 +80,9 @@ public class TradeServiceTest {
         assertThat(rebuilt).isZero();
     }
 
-    /** А вот существующую позицию продажа в ноль обнуляет, но не удаляет. */
+    /**
+     * А вот существующую позицию продажа в ноль обнуляет, но не удаляет.
+     */
     @Test
     void rebuildPositions_zeroesExistingPosition_whenJournalNetsToZero() {
         when(tradeRepository.findByUserIdOrderByTradeDateDesc(userId))
@@ -102,6 +104,7 @@ public class TradeServiceTest {
                 .quantity(BigDecimal.valueOf(5))
                 .averagePrice(BigDecimal.valueOf(100)).build();
     }
+
     private Trade trade() {
         return trade(TradeType.BUY, "2");
     }
@@ -116,6 +119,12 @@ public class TradeServiceTest {
                 .build();
     }
 
+    @Test
+    void createTradeRequest_normalizesTicker() {
+        var request = new CreateTradeRequest("aapl", BigDecimal.ONE, TradeType.BUY,
+                BigDecimal.TEN, null, null, null, null);
+        assertThat(request.ticker()).isEqualTo("AAPL");
+    }
 
 
 }
