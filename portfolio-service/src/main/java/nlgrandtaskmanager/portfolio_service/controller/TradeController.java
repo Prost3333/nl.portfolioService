@@ -40,13 +40,4 @@ public class TradeController {
         return tradeService.getTrades(userId);
     }
 
-    /**
-     * Временный эндпоинт: перезаливает уже существующие сделки в Kafka, чтобы ai-service
-     * увидел журнал, накопленный до появления продюсера. Удалить после разовой миграции.
-     */
-    @PostMapping("/backfill")
-    public Map<String, Integer> backfill(Authentication authentication) {
-        UUID userId = (UUID) authentication.getPrincipal();
-        return Map.of("published", tradeService.republishTrades(userId));
-    }
 }
