@@ -9,6 +9,7 @@ import nlgrandtaskmanager.portfolio_service.security.JwtAuthenticationFilter;
 import nlgrandtaskmanager.portfolio_service.security.JwtService;
 import nlgrandtaskmanager.portfolio_service.service.TradeService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -24,13 +25,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TradeController.class)
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
@@ -97,6 +98,25 @@ public class TradeControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(tradeService, never()).addTrade(any(), any());
+    }
+    @Test
+    void addTrade_returns201_andPassesAuthenticatedUserId() throws Exception {
+        CreateTradeRequest request = new CreateTradeRequest(
+                "AAPL", BigDecimal.valueOf(5), TradeType.BUY,
+                BigDecimal.valueOf(115), LocalDate.of(2026, 1, 15),
+                "Отчётность лучше ожиданий", 4, null);
+
+        mockMvc.perform(post("/trade/trades")
+                        .with(authentication(auth()))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(content().string(""));
+
+        ArgumentCaptor<CreateTradeRequest> captor = ArgumentCaptor.forClass(CreateTradeRequest.class);
+        verify(tradeService).addTrade(eq(USER_ID), captor.capture());
+        assertThat(captor.getValue().ticker()).isEqualTo("AAPL");
+        assertThat(captor.getValue().quantity()).isEqualByComparingTo("5");
     }
 
 }
